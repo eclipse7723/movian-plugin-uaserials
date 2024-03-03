@@ -1,0 +1,3 @@
+[submodule "movian"]
+	path = movian
+	url = git@github.com:andoma/movian.git

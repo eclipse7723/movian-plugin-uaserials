@@ -1,0 +1,15 @@
+{
+    "type": "ecmascript",
+    "apiversion": 2,
+    "id": "UASerials",
+    "file": "uaserials.js",
+    "showtimeVersion": "0",
+    "version": "0.0.0",
+    "author": "eclipse7723",
+    "title": "UASerials",
+    "icon": "uaserials.png",
+    "synopsis": "UASerials.pro — твої улюблені серіали українською мовою онлайн",
+    "category": "video",
+    "description": "Плагін для відтворення відео UASerials.pro — твої улюблені серіали українською мовою онлайн",
+    "homepage": "https://github.com/eclipse7723/movian-plugin-uaserials"
+  }
