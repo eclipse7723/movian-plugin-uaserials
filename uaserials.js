@@ -7,16 +7,13 @@ const http = require('movian/http');
 
 /* CONSTANTS */
 
-const pluginDescriptor = JSON.parse(Plugin.manifest);
+const DEFAULT_PAGE_TYPE = "directory";
+const PLUGIN = JSON.parse(Plugin.manifest);
 // plugin constants
-const PLUGIN_PREFIX = pluginDescriptor.id;
-const PLUGIN_TITLE = pluginDescriptor.title;
-const PLUGIN_SYNOPSIS = pluginDescriptor.synopsis;
-const PLUGIN_AUTHOR = pluginDescriptor.author;
-const PLUGIN_VERSION = pluginDescriptor.version;
-const PLUGIN_LOGO = Plugin.path + pluginDescriptor.icon;
-const BASE_URL = "https://" + Plugin.base_url;
+const PLUGIN_LOGO = Plugin.path + PLUGIN.icon;
+const BASE_URL = "https://uaserials.pro";
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+
 
 /* PLUGIN CODE */
 
@@ -35,7 +32,8 @@ function parseMovies(page, href) {
         let item_title = children[1].innerText + " (" + children[2].innerText + ")";
         let item_href = children[1].children[0].href;
         let item_img = children[0].getElementByTagName("img")[0].src;
-        page.appendItem(PLUGIN_PREFIX + ":moviepage:" + item_href, 'video', {
+
+        page.appendItem(`${PLUGIN.id}:moviepage:${item_href}:${item_title}`, 'video', {
             title: item_title,
             icon: item_img,
         });
@@ -43,53 +41,52 @@ function parseMovies(page, href) {
     });
 }
 
-// Create the service (ie, icon on home screen)
-service.create(PLUGIN_TITLE, PLUGIN_PREFIX + ':start', 'video', true, PLUGIN_LOGO);
+function setPageHeader(page, type, title) {
+    page.type = type;
+    if (page.metadata) {
+    page.metadata.title = title;
+    page.metadata.icon = PLUGIN_LOGO;
+    page.metadata.logo = PLUGIN_LOGO;
 
-settings.globalSettings(plugin.id, plugin.title, LOGO, plugin.synopsis);
+    }
+}
+
+
+service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
+settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
 
 /* PAGES */
 
-new page.Route(PLUGIN_PREFIX + ":start", function(page) {
-    page.loading = true;
+new page.Route(PLUGIN.id + ":start", function(page) {
+    setPageHeader(page, "directory", PLUGIN.id)
+    page.loading = false;
 
-    page.type = 'directory';
-    page.metadata.title = PLUGIN_PREFIX
-    page.metadata.icon = Plugin.path + 'logo.svg';
-    page.metadata.logo = Plugin.path + 'logo.svg';
-
-    // page.appendItem(PLUGIN_PREFIX + ':search:', 'search', {
-    //     title: "Пошук " + PLUGIN_PREFIX,
+    // page.appendItem(plugin.id + ':search:', 'search', {
+    //     title: "Пошук " + plugin.id,
     // });
 
-    page.appendItem(PLUGIN_PREFIX + ":list:/series", 'directory', {
+    page.appendItem(`${PLUGIN.id}:list:/series:Серіали`, 'directory', {
         title: "Серіали",
     });
-    page.appendItem(PLUGIN_PREFIX + ":list:/films", 'directory', {
+    page.appendItem(`${PLUGIN.id}:list:/films:Фільми`, 'directory', {
         title: "Фільми",
     });
-    page.appendItem(PLUGIN_PREFIX + ":list:/cartoons", 'directory', {
+    page.appendItem(`${PLUGIN.id}:list:/cartoons:Мультсеріали`, 'directory', {
         title: "Мультсеріали",
     });
-    page.appendItem(PLUGIN_PREFIX + ":list:/fcartoons", 'directory', {
+    page.appendItem(`${PLUGIN.id}:list:/fcartoons:Мультфільми`, 'directory', {
         title: "Мультфільми",
     });
-    page.appendItem(PLUGIN_PREFIX + ":list:/anime", 'directory', {
+    page.appendItem(`${PLUGIN.id}:list:/anime:Аніме`, 'directory', {
         title: "Аніме",
     });
-
-    page.loading = false;
 });
 
 
-new page.Route(PLUGIN_PREFIX + ":list:(.*)", function(page, href, title) {
+new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - ${title}`);
+    
     page.loading = true;
-
-    page.type = 'directory';
-    page.metadata.title = title
-    page.metadata.icon = Plugin.path + 'logo.svg';
-    page.metadata.logo = Plugin.path + 'logo.svg';
-
     parseMovies(page, BASE_URL + href)
 
     // pagination --------------------
@@ -98,7 +95,7 @@ new page.Route(PLUGIN_PREFIX + ":list:(.*)", function(page, href, title) {
     }
     let nextPageNumber = 2;
 
-    function paginator() {
+    function loader() {
         let url = generateSearchURL(nextPageNumber);
 
         parseMovies(page, url);
@@ -107,56 +104,52 @@ new page.Route(PLUGIN_PREFIX + ":list:(.*)", function(page, href, title) {
         // todo: check if next page exists
     }
 
-    page.asyncPaginator = paginator;
+    page.asyncPaginator = loader;
     // -------------------------------
 
     page.loading = false;
 });
 
 
-new page.Route(PLUGIN_PREFIX + ":moviepage:(.*):(.*)", function(page, title, href) {
+new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - '${title}'`)
+    
     page.loading = true;
 
-    page.type = 'directory';
-    page.metadata.title = PLUGIN_PREFIX + ": " + title;
-    page.metadata.icon = Plugin.path + 'logo.svg';
-    page.metadata.logo = Plugin.path + 'logo.svg';
+    // todo: show details about movie
 
     page.loading = false;
 
 });
 
-new page.Route(PLUGIN_PREFIX + ':play:(.*)', function(page, href) {
-    page.type = 'video';
-    page.metadata.title = PLUGIN_PREFIX;
-    page.metadata.icon = Plugin.path + 'logo.svg';
-    page.metadata.logo = Plugin.path + 'logo.svg';
+new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
+    setPageHeader(page, "video", `${PLUGIN.id} - '${title}'`)
 
     page.redirect(href);
 });
 
 
-new page.Searcher(PLUGIN_PREFIX + "- Results", PLUGIN_LOGO, function(page, query) {
-    page.loading = true;
+new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
 
-    page.type = 'directory';
-    page.metadata.title = PLUGIN_PREFIX
-    page.metadata.icon = Plugin.path + 'logo.svg';
-    page.metadata.logo = Plugin.path + 'logo.svg';
+    page.loading = true;
 
     let searchUrl = BASE_URL + "/index.php?do=search&story=" + query
     let nextPageNumber = 1;
 
-    function paginator() {
+    function loader() {
+        page.loading = true;
         let url = searchUrl + "&search_start=" + nextPageNumber;
 
         parseMovies(page, url);
         nextPageNumber++;
 
         // todo: check if next page exists
+        page.loading = false;
     }
 
-    page.asyncPaginator = paginator;
+    page.asyncPaginator = loader;
 
+    page.loading = false;
 
 });

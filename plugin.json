@@ -2,7 +2,6 @@
     "type": "ecmascript",
     "apiversion": 2,
     "id": "UASerials",
-    "base_url": "uaserials.pro",
     "file": "uaserials.js",
     "showtimeVersion": "0",
     "version": "0.0.1",
