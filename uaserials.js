@@ -17,19 +17,27 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 
 /* PLUGIN CODE */
 
-function parseMovies(page, href) {
+function fetchDOM(href) {
+    console.log("fetch DOM of '${href}'...");
+
     let response = http.request(href, {
         'headers': {
             'user-agent': USER_AGENT,
         },
     });
-    response = response.toString()
+    response = response.toString();
     let dom = html.parse(response);
-    let items = dom.root.getElementsByClassName("short-cols")
 
+    return dom;
+}
+
+function parseMovies(page, href) {
+    let dom = fetchDOM(href);
+
+    let items = dom.root.getElementsByClassName("short-cols");
     items.forEach(function(item) {
         let children = item.children;
-        let item_title = children[1].innerText + " (" + children[2].innerText + ")";
+        let item_title = children[1].innerText + " <i>(" + children[2].innerText + ")</i>";
         let item_href = children[1].children[0].href;
         let item_img = children[0].getElementByTagName("img")[0].src;
 
@@ -53,36 +61,33 @@ function setPageHeader(page, type, title) {
 
 
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
-settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
+//settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
 
 /* PAGES */
 
 new page.Route(PLUGIN.id + ":start", function(page) {
-    setPageHeader(page, "directory", PLUGIN.id)
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
     page.loading = false;
 
-    // page.appendItem(plugin.id + ':search:', 'search', {
-    //     title: "Пошук " + plugin.id,
-    // });
+    page.appendItem(PLUGIN.id + ':search:', 'search', {
+        title: "Пошук на" + BASE_URL
+    });
 
-    page.appendItem(`${PLUGIN.id}:list:/series:Серіали`, 'directory', {
-        title: "Серіали",
-    });
-    page.appendItem(`${PLUGIN.id}:list:/films:Фільми`, 'directory', {
-        title: "Фільми",
-    });
-    page.appendItem(`${PLUGIN.id}:list:/cartoons:Мультсеріали`, 'directory', {
-        title: "Мультсеріали",
-    });
-    page.appendItem(`${PLUGIN.id}:list:/fcartoons:Мультфільми`, 'directory', {
-        title: "Мультфільми",
-    });
-    page.appendItem(`${PLUGIN.id}:list:/anime:Аніме`, 'directory', {
-        title: "Аніме",
-    });
+    let categories = [
+        {name: "Серіали", tag: `/series`},
+        {name: "Фільми", tag: `/films`},
+        {name: "Мультсеріали", tag: `/cartoons`},
+        {name: "Мультфільми", tag: `/fcartoons`},
+        {name: "Аніме", tag: `/anime`},
+    ];
+    categories.forEach(function(data) {
+        page.appendItem(`${PLUGIN.id}:list:${data.tag}:${data.name}`, "directory", {
+            title: data.name
+        })
+    })
+
 });
-
-
+/*
 new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - ${title}`);
     
@@ -110,13 +115,34 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
     page.loading = false;
 });
 
-
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - '${title}'`)
     
     page.loading = true;
 
-    // todo: show details about movie
+    let dom = fetchDOM(href);
+
+    // get details of movie (year, etc..)
+    
+    let detailsHTML = dom.root.getElementsByClassName("short-cols")[0].children;
+    let details = [];
+    detailsHTML.forEach(function(item) {
+        let detail = item.innerText.replace("\n", "");
+        details.push(detail);
+    });
+    console.log({details: details});
+
+    let imdbRating = dom.root.getElementsByClassName("short-rates")[0].children[0].innerText;
+    console.log({imdbRating: imdbRating});
+
+    let img = dom.root.getElementsByClassName("fimg")[0].children[0].src;
+    console.log({img: img});
+
+    let description = dom.root.getElementsByClassName("ftext")[0].innerText;
+    console.log({description: description});
+
+    // setup info on the page
+
 
     page.loading = false;
 
@@ -125,11 +151,12 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
     setPageHeader(page, "video", `${PLUGIN.id} - '${title}'`)
 
+    // todo
+
     page.redirect(href);
 });
 
-
-new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
+function setupSearchPage(page, query) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
 
     page.loading = true;
@@ -141,6 +168,8 @@ new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
         page.loading = true;
         let url = searchUrl + "&search_start=" + nextPageNumber;
 
+        console.log(`search at '${url}'...`);
+
         parseMovies(page, url);
         nextPageNumber++;
 
@@ -149,7 +178,15 @@ new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
     }
 
     page.asyncPaginator = loader;
+    loader();
 
     page.loading = false;
+};
 
-});
+new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
+    setupSearchPage(page, query);
+})
+
+new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
+    setupSearchPage(page, query);
+});*/
