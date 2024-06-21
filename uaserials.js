@@ -18,30 +18,30 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 /* PLUGIN CODE */
 
 function fetchDOM(href) {
-    console.log("fetch DOM of '${href}'...");
+    console.log("fetch DOM of '" + href + "'...");
 
-    let response = http.request(href, {
+    var response = http.request(href, {
         'headers': {
             'user-agent': USER_AGENT,
         },
     });
     response = response.toString();
-    let dom = html.parse(response);
+    var dom = html.parse(response);
 
     return dom;
 }
 
 function parseMovies(page, href) {
-    let dom = fetchDOM(href);
+    var dom = fetchDOM(href);
 
-    let items = dom.root.getElementsByClassName("short-cols");
+    var items = dom.root.getElementsByClassName("short-cols");
     items.forEach(function(item) {
-        let children = item.children;
-        let item_title = children[1].innerText + " <i>(" + children[2].innerText + ")</i>";
-        let item_href = children[1].children[0].href;
-        let item_img = children[0].getElementByTagName("img")[0].src;
+        var children = item.children;
+        var item_title = children[1].innerText + " <i>(" + children[2].innerText + ")</i>";
+        var item_href = children[1].children[0].href;
+        var item_img = children[0].getElementByTagName("img")[0].src;
 
-        page.appendItem(`${PLUGIN.id}:moviepage:${item_href}:${item_title}`, 'video', {
+        page.appendItem(PLUGIN.id + ":moviepage:" + item_href + ":" + item_title, 'video', {
             title: item_title,
             icon: item_img,
         });
@@ -61,7 +61,7 @@ function setPageHeader(page, type, title) {
 
 
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
-//settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
+settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
 
 /* PAGES */
 
@@ -73,35 +73,35 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         title: "Пошук на" + BASE_URL
     });
 
-    let categories = [
-        {name: "Серіали", tag: `/series`},
-        {name: "Фільми", tag: `/films`},
-        {name: "Мультсеріали", tag: `/cartoons`},
-        {name: "Мультфільми", tag: `/fcartoons`},
-        {name: "Аніме", tag: `/anime`},
+    var categories = [
+        {name: "Серіали", tag: "/series"},
+        {name: "Фільми", tag: "/films"},
+        {name: "Мультсеріали", tag: "/cartoons"},
+        {name: "Мультфільми", tag: "/fcartoons"},
+        {name: "Аніме", tag: "/anime"},
     ];
     categories.forEach(function(data) {
-        page.appendItem(`${PLUGIN.id}:list:${data.tag}:${data.name}`, "directory", {
+        page.appendItem(PLUGIN.id + ":list:" + data.tag + ":" + data.name, "directory", {
             title: data.name
         })
     })
 
 });
-/*
+/**/
 new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
-    setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - ${title}`);
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
     
     page.loading = true;
     parseMovies(page, BASE_URL + href)
 
     // pagination --------------------
     function generateSearchURL(nextPage) {
-        return BASE_URL + href + `/page/${nextPage}/`
+        return BASE_URL + href + "/page/" + nextPage + "/"
     }
-    let nextPageNumber = 2;
+    var nextPageNumber = 2;
 
     function loader() {
-        let url = generateSearchURL(nextPageNumber);
+        var url = generateSearchURL(nextPageNumber);
 
         parseMovies(page, url);
         nextPageNumber++;
@@ -116,29 +116,29 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
 });
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
-    setPageHeader(page, DEFAULT_PAGE_TYPE, `${PLUGIN.id} - '${title}'`)
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
     
     page.loading = true;
 
-    let dom = fetchDOM(href);
+    var dom = fetchDOM(href);
 
     // get details of movie (year, etc..)
     
-    let detailsHTML = dom.root.getElementsByClassName("short-cols")[0].children;
-    let details = [];
+    var detailsHTML = dom.root.getElementsByClassName("short-cols")[0].children;
+    var details = [];
     detailsHTML.forEach(function(item) {
-        let detail = item.innerText.replace("\n", "");
+        var detail = item.innerText.replace("\n", "");
         details.push(detail);
     });
     console.log({details: details});
 
-    let imdbRating = dom.root.getElementsByClassName("short-rates")[0].children[0].innerText;
+    var imdbRating = dom.root.getElementsByClassName("short-rates")[0].children[0].innerText;
     console.log({imdbRating: imdbRating});
 
-    let img = dom.root.getElementsByClassName("fimg")[0].children[0].src;
+    var img = dom.root.getElementsByClassName("fimg")[0].children[0].src;
     console.log({img: img});
 
-    let description = dom.root.getElementsByClassName("ftext")[0].innerText;
+    var description = dom.root.getElementsByClassName("ftext")[0].innerText;
     console.log({description: description});
 
     // setup info on the page
@@ -149,7 +149,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 });
 
 new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
-    setPageHeader(page, "video", `${PLUGIN.id} - '${title}'`)
+    setPageHeader(page, "video", PLUGIN.id + " - " + title)
 
     // todo
 
@@ -161,14 +161,14 @@ function setupSearchPage(page, query) {
 
     page.loading = true;
 
-    let searchUrl = BASE_URL + "/index.php?do=search&story=" + query
-    let nextPageNumber = 1;
+    var searchUrl = BASE_URL + "/index.php?do=search&story=" + query
+    var nextPageNumber = 1;
 
     function loader() {
         page.loading = true;
-        let url = searchUrl + "&search_start=" + nextPageNumber;
+        var url = searchUrl + "&search_start=" + nextPageNumber;
 
-        console.log(`search at '${url}'...`);
+        console.log("search at '" + url + "'...");
 
         parseMovies(page, url);
         nextPageNumber++;
@@ -189,4 +189,4 @@ new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
 
 new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
     setupSearchPage(page, query);
-});*/
+});
