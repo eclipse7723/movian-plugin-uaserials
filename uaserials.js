@@ -4,6 +4,7 @@ const service = require('movian/service');
 const settings = require('movian/settings');
 const page = require('movian/page');
 const http = require('movian/http');
+const html = require('movian/html');
 
 /* CONSTANTS */
 
@@ -17,7 +18,25 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 
 /* PLUGIN CODE */
 
+// TEXT FORMATTING -----------------------------------------------
+function format(text, tag) {
+    return "<font><" + tag + ">" + text + "</" + tag + "></font>";
+}
+function i(text) {
+    return format(text, "i");
+}
+function b(text) {
+    return format(text, "b");
+}
+// ---------------------------------------------------------------
+
 function fetchDOM(href) {
+    /* returns document, methods:
+        - getElementById -> object
+        - getElementByClassName -> array
+        - getElementByTagName -> array
+    */
+
     console.log("fetch DOM of '" + href + "'...");
 
     var response = http.request(href, {
@@ -25,25 +44,31 @@ function fetchDOM(href) {
             'user-agent': USER_AGENT,
         },
     });
+
     response = response.toString();
     var dom = html.parse(response);
 
-    return dom;
+    return dom.root;
 }
 
 function parseMovies(page, href) {
     var dom = fetchDOM(href);
 
-    var items = dom.root.getElementsByClassName("short-cols");
+    var items = dom.getElementByClassName("short-cols");
+    console.log("parseMovies items " + items)
     items.forEach(function(item) {
         var children = item.children;
-        var item_title = children[1].innerText + " <i>(" + children[2].innerText + ")</i>";
-        var item_href = children[1].children[0].href;
-        var item_img = children[0].getElementByTagName("img")[0].src;
+        const titleUa = children[1].textContent;
+        const titleEn = children[2].textContent;
+        var itemTitle = titleUa;
+        // itemTitle += " " + i("(" + titleEn + ")");
+        const itemHref = children[0].attributes.getNamedItem('href').value;
+        const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
+        // const itemImg = BASE_URL + relativeImgPath;
 
-        page.appendItem(PLUGIN.id + ":moviepage:" + item_href + ":" + item_title, 'video', {
-            title: item_title,
-            icon: item_img,
+        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + itemTitle, 'video', {
+            title: itemTitle,
+            icon: itemImg,
         });
 
     });
@@ -61,7 +86,7 @@ function setPageHeader(page, type, title) {
 
 
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
-settings.globalSettings(PLUGIN.id, PLUGIN.title, LOGO, PLUGIN.synopsis);
+settings.globalSettings(PLUGIN.id, PLUGIN.title, PLUGIN_LOGO, PLUGIN.synopsis);
 
 /* PAGES */
 
@@ -109,7 +134,7 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
         // todo: check if next page exists
     }
 
-    page.asyncPaginator = loader;
+    page.asyncPaginator = loader;   // fixme: loading not working ?
     // -------------------------------
 
     page.loading = false;
@@ -124,25 +149,31 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
     // get details of movie (year, etc..)
     
-    var detailsHTML = dom.root.getElementsByClassName("short-cols")[0].children;
+    var detailsHTML = dom.getElementByClassName("short-list")[0].children;
     var details = [];
     detailsHTML.forEach(function(item) {
-        var detail = item.innerText.replace("\n", "");
+        var detail = item.textContent.replace("\n", "");    // fixme textContent is undefined here
         details.push(detail);
     });
     console.log({details: details});
 
-    var imdbRating = dom.root.getElementsByClassName("short-rates")[0].children[0].innerText;
+    var imdbRating = dom.getElementByClassName("short-rates")[0].children[0].textContent;
     console.log({imdbRating: imdbRating});
 
-    var img = dom.root.getElementsByClassName("fimg")[0].children[0].src;
+    var img = dom.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
     console.log({img: img});
 
-    var description = dom.root.getElementsByClassName("ftext")[0].innerText;
+    var description = dom.getElementByClassName("ftext")[0].textContent;
     console.log({description: description});
 
     // setup info on the page
 
+    var playHref = dom.getElementByClassName("fplayer")[0].children[0].children[0]
+
+    page.appendItem(PLUGIN.id + ":play:" + href + ":" + title, 'video', {
+        title: itemTitle,
+        icon: itemImg,
+    });
 
     page.loading = false;
 
