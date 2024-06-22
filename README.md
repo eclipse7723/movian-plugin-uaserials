@@ -1,6 +1,12 @@
 # movian-uaserials-plugin
 https://uaserials.pro/ integration for Movian
 
+## Build and Install
+
+Check Releases for new versions. If there is nothing or you want newest version, please clone repository and follow instructions below.
+
+Run `build.py` and move zip file into Movian - do not unzip. Open "Plugins", find file and click install.
+
 ---
 
 ### Movian plugin how-to
