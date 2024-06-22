@@ -175,18 +175,21 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     // setup info on the page
 
     // page.appendPassiveItem(PLUGIN.id + ":play:" + href + ":" + title, 'video', {
-    page.appendPassiveItem('video', {
-        title: "Info",
+    page.appendPassiveItem('video', '', {
+        title: title,
         icon: img,
         description: description,
         rating: imdbRating ? imdbRating * 10 : 0,
     });
 
-    page.appendPassiveItem("separator", {
+    page.appendPassiveItem("separator", '', {
         title: "Дивитись онлайн"
     });
 
-    const playData = getElementsByTagName("noindex")[0].children[0].data;
+    // WORK IN PROGRESS:
+    /*
+
+    const playData = dom.getElementByTagName("noindex")[0].children[0].data;
 
     playData.forEach(function(data) {
         if (data.seasons) { 
@@ -207,6 +210,8 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
         }
     })
 
+    */
+
     page.loading = false;
 
 });
@@ -226,7 +231,7 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(\d*):(\d*)', function(
 
     // todo: show sounds here
     
-    const playData = getElementsByTagName("noindex")[0].children[0].data;
+    const playData = dom.getElementByTagName("noindex")[0].children[0].data;
     const episodeData = playData[0].seasons[season].episodes[episode];
     
     episodeData.sounds.forEach(function(data) { 
