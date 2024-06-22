@@ -64,7 +64,6 @@ function parseMovies(page, href) {
         // itemTitle += " " + i("(" + titleEn + ")");
         const itemHref = children[0].attributes.getNamedItem('href').value;
         const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
-        // const itemImg = BASE_URL + relativeImgPath;
 
         page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + itemTitle, 'video', {
             title: itemTitle,
@@ -95,7 +94,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
     page.loading = false;
 
     page.appendItem(PLUGIN.id + ':search:', 'search', {
-        title: "Пошук на" + BASE_URL
+        title: "Пошук на " + BASE_URL
     });
 
     var categories = [
@@ -151,13 +150,20 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     
     var detailsHTML = dom.getElementByClassName("short-list")[0].children;
     var details = [];
-    detailsHTML.forEach(function(item) {
-        var detail = item.textContent.replace("\n", "");    // fixme textContent is undefined here
+    for (i = 0; i < detailsHTML.length; i++) {
+        const item = detailsHTML[i];
+        const detail = item.textContent;
+        // console.log("   > ", detail);
         details.push(detail);
-    });
+    };
     console.log({details: details});
 
-    var imdbRating = dom.getElementByClassName("short-rates")[0].children[0].textContent;
+    var imdbRating = dom.getElementByClassName("short-rates")[0].getElementByTagName("a");
+    if (imdbRating.length != 0) {
+        imdbRating = imdbRating[0].textContent;
+    } else {
+        imdbRating = undefined  // todo: try to fetch from IMDB api actual rating
+    }
     console.log({imdbRating: imdbRating});
 
     var img = dom.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
@@ -168,12 +174,38 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
     // setup info on the page
 
-    var playHref = dom.getElementByClassName("fplayer")[0].children[0].children[0]
-
-    page.appendItem(PLUGIN.id + ":play:" + href + ":" + title, 'video', {
-        title: itemTitle,
-        icon: itemImg,
+    // page.appendPassiveItem(PLUGIN.id + ":play:" + href + ":" + title, 'video', {
+    page.appendPassiveItem('video', {
+        title: "Info",
+        icon: img,
+        description: description,
+        rating: imdbRating ? imdbRating * 10 : 0,
     });
+
+    page.appendPassiveItem("separator", {
+        title: "Дивитись онлайн"
+    });
+
+    const playData = getElementsByTagName("noindex")[0].children[0].data;
+
+    playData.forEach(function(data) {
+        if (data.seasons) { 
+            data.seasons.forEach(function(s) {
+                page.appendPassiveItem("separator", "", {
+                    title: seasons[s].title
+                });
+                seasons[s].episodes.forEach(function(ep) {
+                    page.appendItem(PLUGIN.id + ":play-select-sound:" + href + ":" + title + ":" + s + ":" + ep, "directory", {
+                        title: seasons[s].episodes[ep].title
+                    });
+                });
+            });
+        } else { 
+            page.appendItem(PLUGIN.id + ":play:" + data + ":" + title, "directory", {
+                title: data.title
+            });
+        }
+    })
 
     page.loading = false;
 
@@ -183,6 +215,25 @@ new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
     setPageHeader(page, "video", PLUGIN.id + " - " + title)
 
     // todo
+
+    // page.redirect(href);
+
+    page.source = href
+});
+
+new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(\d*):(\d*)', function(page, href, title, season, episode) {
+    setPageHeader(page, "video", PLUGIN.id + " - " + title + " - озвучка")
+
+    // todo: show sounds here
+    
+    const playData = getElementsByTagName("noindex")[0].children[0].data;
+    const episodeData = playData[0].seasons[season].episodes[episode];
+    
+    episodeData.sounds.forEach(function(data) { 
+        page.appendItem(PLUGIN.id + ":play:" + data.url + ":" + title, "directory", {
+            title: data.title
+        });
+    })
 
     page.redirect(href);
 });
