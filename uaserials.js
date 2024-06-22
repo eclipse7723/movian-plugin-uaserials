@@ -101,7 +101,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Серіали", tag: "/series"},
         {name: "Фільми", tag: "/films"},
         {name: "Мультсеріали", tag: "/cartoons"},
-        {name: "Мультфільми", tag: "/fcartoons"},
+        {name: "Мультфільми", tag: "/fcartoon"},
         {name: "Аніме", tag: "/anime"},
     ];
     categories.forEach(function(data) {
@@ -190,6 +190,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     /*
 
     const playData = dom.getElementByTagName("noindex")[0].children[0].data;
+    // fixme: noindex unknown tag........
 
     playData.forEach(function(data) {
         if (data.seasons) { 
