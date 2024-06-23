@@ -4,7 +4,10 @@ import sys
 import json
 
 
-plugin_desc_name = "plugin.json"
+class Params():
+    plugin_desc_name = "plugin.json"
+    plugin_name = "movian-plugin-uaserials"
+    include_version = True
 
 
 def compress_to_zip(zip_filename, files):
@@ -19,16 +22,21 @@ def compress_to_zip(zip_filename, files):
 
 
 def build():
-    if os.path.exists(plugin_desc_name) is False:
-        raise FileNotFoundError("Не найден файл с настройками плагина "+plugin_desc_name)
+    desc_name = Params.plugin_desc_name
+    if os.path.exists(desc_name) is False:
+        raise FileNotFoundError(f"Не найден файл с настройками плагина {desc_name!r}")
 
-    with open(plugin_desc_name, "r") as f:
+    with open(desc_name, "r") as f:
         plugin_desc = json.load(f)
 
-    files = [plugin_desc_name, plugin_desc["icon"], plugin_desc["file"]]
+    files = [desc_name, plugin_desc["icon"], plugin_desc["file"]]
 
     try:
-        zip_filename = f"movian-plugin-uaserials-{plugin_desc['version']}.zip"
+        zip_filename = Params.plugin_name
+        if Params.include_version is True:
+            zip_filename += f"-{plugin_desc['version']}"
+        zip_filename += ".zip"
+
         compress_to_zip(zip_filename, files)
     
         print(f'Плагин создан: {os.path.abspath(zip_filename)} - версия {plugin_desc["version"]}')
@@ -38,6 +46,8 @@ def build():
         print(e)
         print("Устраните ошибки и попробуйте снова...")
         exit(-1)
+
+    return zip_filename
 
 if __name__ == "__main__":
     build()

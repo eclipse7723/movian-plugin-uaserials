@@ -1,3 +1,5 @@
 .idea
 examples/
 *.zip
+__pycache__
+.env
