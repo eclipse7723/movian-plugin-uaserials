@@ -30,31 +30,41 @@ function b(text) {
 }
 // ---------------------------------------------------------------
 
-function fetchDOM(href) {
-    /* returns document, methods:
-        - getElementById -> object
-        - getElementByClassName -> array
-        - getElementByTagName -> array
-    */
+function fetchHTML(href) {
+    /* returns html code as string */
 
-    console.log("fetch DOM of '" + href + "'...");
-
+    console.log("fetch '" + href + "'");
     var response = http.request(href, {
         'headers': {
             'user-agent': USER_AGENT,
         },
     });
+    console.log("... status code is " + response.statuscode);
 
     response = response.toString();
-    var dom = html.parse(response);
 
+    return response;
+}
+
+function fetchDOM(href) {
+    var response = fetchHTML(href);
+    return html.parse(response);
+}
+
+function fetchDoc(href) {
+    /* returns document, methods:
+        - getElementById -> object
+        - getElementByClassName -> array
+        - getElementByTagName -> array
+    */
+    var dom = fetchDOM(href);
     return dom.root;
 }
 
 function parseMovies(page, href) {
-    var dom = fetchDOM(href);
+    var doc = fetchDoc(href);
 
-    var items = dom.getElementByClassName("short-cols");
+    var items = doc.getElementByClassName("short-cols");
     console.log("parseMovies items " + items)
     items.forEach(function(item) {
         var children = item.children;
@@ -65,10 +75,11 @@ function parseMovies(page, href) {
         const itemHref = children[0].attributes.getNamedItem('href').value;
         const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
 
-        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + itemTitle, 'video', {
+        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + itemTitle.replace(":", " "), 'video', {
             title: itemTitle,
             icon: itemImg,
         });
+        page.entries += 1
 
     });
 }
@@ -76,10 +87,9 @@ function parseMovies(page, href) {
 function setPageHeader(page, type, title) {
     page.type = type;
     if (page.metadata) {
-    page.metadata.title = title;
-    page.metadata.icon = PLUGIN_LOGO;
-    page.metadata.logo = PLUGIN_LOGO;
-
+        page.metadata.title = title;
+        page.metadata.icon = PLUGIN_LOGO;
+        page.metadata.logo = PLUGIN_LOGO;
     }
 }
 
@@ -111,11 +121,12 @@ new page.Route(PLUGIN.id + ":start", function(page) {
     })
 
 });
-/**/
+
 new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
     
     page.loading = true;
+    page.entries = 0
     parseMovies(page, BASE_URL + href)
 
     // pagination --------------------
@@ -141,35 +152,36 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
-    
+
+    console.log(href, title)
     page.loading = true;
 
-    var dom = fetchDOM(href);
+    var doc = fetchDoc(href);
 
     // get details of movie (year, etc..)
     
-    var detailsHTML = dom.getElementByClassName("short-list")[0].children;
+    var detailsHTML = doc.getElementByClassName("short-list")[0].children;
     var details = [];
-    for (i = 0; i < detailsHTML.length; i++) {
+    for (var i = 0; i < detailsHTML.length; i++) {
         const item = detailsHTML[i];
         const detail = item.textContent;
         // console.log("   > ", detail);
         details.push(detail);
-    };
+    }
     console.log({details: details});
 
-    var imdbRating = dom.getElementByClassName("short-rates")[0].getElementByTagName("a");
-    if (imdbRating.length != 0) {
+    var imdbRating = doc.getElementByClassName("short-rates")[0].getElementByTagName("a");
+    if (imdbRating.length !== 0) {
         imdbRating = imdbRating[0].textContent;
     } else {
         imdbRating = undefined  // todo: try to fetch from IMDB api actual rating
     }
     console.log({imdbRating: imdbRating});
 
-    var img = dom.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
+    var img = doc.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
     console.log({img: img});
 
-    var description = dom.getElementByClassName("ftext")[0].textContent;
+    var description = doc.getElementByClassName("ftext")[0].textContent;
     console.log({description: description});
 
     // setup info on the page
@@ -189,7 +201,10 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     // WORK IN PROGRESS:
     /*
 
-    const playData = dom.getElementByTagName("noindex")[0].children[0].data;
+    // fixme: impossible to get `player-control` tag with important data about seasons and video urls
+    //        gumbo doesn't know about it so it can get it...
+
+    const playData = doc.getElementByTagName("player-control")[0].data;
     // fixme: noindex unknown tag........
 
     playData.forEach(function(data) {
@@ -210,7 +225,6 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
             });
         }
     })
-
     */
 
     page.loading = false;
@@ -231,8 +245,10 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(\d*):(\d*)', function(
     setPageHeader(page, "video", PLUGIN.id + " - " + title + " - озвучка")
 
     // todo: show sounds here
+
+    const doc = fetchDoc(href);
     
-    const playData = dom.getElementByTagName("noindex")[0].children[0].data;
+    const playData = doc.getElementByTagName("noindex")[0].children[0].data;
     const episodeData = playData[0].seasons[season].episodes[episode];
     
     episodeData.sounds.forEach(function(data) { 
@@ -269,11 +285,11 @@ function setupSearchPage(page, query) {
     loader();
 
     page.loading = false;
-};
+}
 
 new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
     setupSearchPage(page, query);
-})
+});
 
 new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
     setupSearchPage(page, query);
