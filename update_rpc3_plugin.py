@@ -37,5 +37,7 @@ if __name__ == "__main__":
 
     rpc_path = os.getenv(ENV_RPC3_PLUGINS_PATH)
     print(f"ENV_RPC3_PLUGINS_PATH={rpc_path}\n")
+    if rpc_path is None:
+        raise ValueError(f"Проверь `.env` файл, там должна быть строка `{ENV_RPC3_PLUGINS_PATH}`.")
 
     build_and_update(rpc_path)
