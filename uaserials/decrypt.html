@@ -14,15 +14,21 @@
 	</div>
 
     <script>
+
         // Ваши зашифрованные данные
+        // const encryptedData = {
+		// 	"ciphertext": "hIZ+lJV16Zyvpv5ooSVYMOe1kzdq8bwDBXOTaF1+lM8hPffaEbEakoGf0bHuykmebw4L2j716Wgbe7KcadeMXftLEcA2Loi2f/TEK1F6SMscCqwbjtc/IRVfWwWp9Wgj5jcRWj6EAR0nQgGX5KTRmX9yHHJBr14yWjIiz+hm/0iDQDVpm3pteogy+Uc1Dj9GOVrHTQiHaEPRJxWHJQwXR9sV2tlfWRODfrSr7IMgQik=",
+		// 	"iv": "e6254c68e76c3967fcaa842410fc636e",
+		// 	"salt": "7c205c73dcad358a6dd437931158937c5b953a1c6d650c37700bc8554ba54ae359b90a4467854ca8dba5c2a2b9866bf319b29093d6c81f126d6fb2dbcf1920c520495db09316cbdcdd0ba8557588ceb285d325e1195885ce5ea83e72cfc6f3521f2c89648dd88aa0fa6835f0e533cfa1ad9cb8e78fbc19aab2133a2060c8b0c52e5dd6bfa27c3233830f025ad1eb901329ed7249d5dad62ff8aa7a757b640e0cb32e87be7b45ba146d0adf82166eea5252a3aba2683cbde1b387b01a3b3716a3b745b29cc650bedf8c3940b40977310dda272706e9d7a5121c189cf1bf51039a73bdc685183a127e8dee30fed88ee52d24285ce9819c873a9fb6e01410ab874a"
+		// };
         const encryptedData = {
-			"ciphertext": "hIZ+lJV16Zyvpv5ooSVYMOe1kzdq8bwDBXOTaF1+lM8hPffaEbEakoGf0bHuykmebw4L2j716Wgbe7KcadeMXftLEcA2Loi2f/TEK1F6SMscCqwbjtc/IRVfWwWp9Wgj5jcRWj6EAR0nQgGX5KTRmX9yHHJBr14yWjIiz+hm/0iDQDVpm3pteogy+Uc1Dj9GOVrHTQiHaEPRJxWHJQwXR9sV2tlfWRODfrSr7IMgQik=",
-			"iv": "e6254c68e76c3967fcaa842410fc636e",
-			"salt": "7c205c73dcad358a6dd437931158937c5b953a1c6d650c37700bc8554ba54ae359b90a4467854ca8dba5c2a2b9866bf319b29093d6c81f126d6fb2dbcf1920c520495db09316cbdcdd0ba8557588ceb285d325e1195885ce5ea83e72cfc6f3521f2c89648dd88aa0fa6835f0e533cfa1ad9cb8e78fbc19aab2133a2060c8b0c52e5dd6bfa27c3233830f025ad1eb901329ed7249d5dad62ff8aa7a757b640e0cb32e87be7b45ba146d0adf82166eea5252a3aba2683cbde1b387b01a3b3716a3b745b29cc650bedf8c3940b40977310dda272706e9d7a5121c189cf1bf51039a73bdc685183a127e8dee30fed88ee52d24285ce9819c873a9fb6e01410ab874a"
+			"ciphertext": "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",
+			"iv": "cb0877d3f9f65294bb0f90f9d86b580a",
+			"salt": "7b17ed5e706c804749599a0d924546889790d587e330823400a745b5256445e98f3c2cb7427eed4547d97d4a6c069faf0869ed3e68556c5ee5dc21fb4c1b8745edbe022c4b20df3633b79bd1dfcf3cacf29089e89fb7b5862e1fc06158829209039bc900c52c900a3b55e7d3efc2404ef60cec64e5c04e026f008642d85cb71eda86fb7a7984eaef660aceba3545db265e5afc94a35a40ab7ebc47ad45432bcc247b055e011c19a44a1178617693903735c59b6f90a2b3ca4f6e011b89c0eae5dd592045fff514b01fce51a80ab5b2bdbbd1fd70e785838a6345b5dc230bbb10599f17b57fb332e190814ce3739cadce8e595ad2b77a32425a4117a9bc484348"
 		};
 
         // Ваш пароль для расшифровки
-        const password = "5b7b0d0a095c227461624e616d655c223a205c22d09fd0bbd0b5d194d1805c222c0d0a095c2275726c5c223a205c2268747470733a2f2f746f72747567612e7774662f766f642f39393038345c220d0a7d2c207b0d0a095c227461624e616d655c223a205c22d0a2d180d0b5d0b9d0bbd0b5d1805c222c0d0a095c2275726c5c223a205c2268747470733a2f2f746f72747567612e7774662f766f642f39393038335c220d0a7d5d";
+        const password = "297796CCB81D2551";
 
         // Конвертируем строки в формат, который понимает CryptoJS
         const ciphertext = CryptoJS.enc.Base64.parse(encryptedData.ciphertext);
@@ -30,25 +36,26 @@
         const salt = CryptoJS.enc.Hex.parse(encryptedData.salt);
 
         // Генерируем ключ и IV используя PBKDF2
-        const keySize = 256;
-        const iterations = 1000;
+        const keySize = 8;
+        const iterations = 999;
         const key = CryptoJS.PBKDF2(password, salt, {
-            keySize: keySize / 32,
+            hasher: CryptoJS.algo.SHA512,
+            keySize: keySize,
             iterations: iterations
         });
 
         // Дешифруем данные
         const decrypted = CryptoJS.AES.decrypt({ ciphertext: ciphertext }, key, {
             iv: iv,
-            padding: CryptoJS.pad.Pkcs7,
-            mode: CryptoJS.mode.CBC
+            // padding: CryptoJS.pad.Pkcs7,
+            // mode: CryptoJS.mode.CBC
         });
 
         // Конвертируем данные обратно в строку
-		console.log(CryptoJS);
-        //const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
-        //console.log("Расшифрованный текст:", plaintext);
-		
+        const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+        console.log("Расшифрованный текст:");
+        console.log(plaintext);
+
 		const divElement = document.getElementById('logs');
 		const newParagraph = document.createElement('p');
 		newParagraph.textContent = CryptoJS.enc.Utf8;
