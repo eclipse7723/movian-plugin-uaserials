@@ -58,8 +58,12 @@
 
 		const divElement = document.getElementById('logs');
 		const newParagraph = document.createElement('p');
-		newParagraph.textContent = CryptoJS.enc.Utf8;
+		newParagraph.textContent = plaintext;
 		divElement.appendChild(newParagraph);
+
+        const correctedJsonString = plaintext.replace(/\\"/g, '"');
+        console.log(JSON.parse(correctedJsonString));
+
     </script>
 </body>
 </html>
