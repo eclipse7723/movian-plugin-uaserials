@@ -1,5 +1,5 @@
 const __UAS_PASSWORD = "297796CCB81D2551"
-var CryptoJS = require("uaserials/crypto-js");
+var CryptoJS = require("./uaserials/crypto-js");
 
 
 function UASDecrypt(cipherData) {
@@ -67,7 +67,7 @@ function UASParsePlayerControl(html) {
     return attributes;
 }
 
-export function UASJsonDecrypt(html) {
+exports.UASJsonDecrypt = function(html) {
     const playerControlAttributes = UASParsePlayerControl(html);
 
     const cipherData = playerControlAttributes["data-tag1"];

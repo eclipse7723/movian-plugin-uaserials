@@ -5,6 +5,9 @@ const settings = require('movian/settings');
 const page = require('movian/page');
 const http = require('movian/http');
 const html = require('movian/html');
+const Test = require('./uaserials/test')
+Test.test("hello world")
+const decrypt = require('./uaserials/decrypt')
 
 /* CONSTANTS */
 
@@ -156,7 +159,8 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     console.log(href, title)
     page.loading = true;
 
-    var doc = fetchDoc(href);
+    const htmlText = fetchHTML(href);
+    const doc = html.parse(htmlText).root;
 
     // get details of movie (year, etc..)
     
@@ -199,12 +203,13 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     });
 
     // WORK IN PROGRESS:
-    /*
 
     // fixme: impossible to get `player-control` tag with important data about seasons and video urls
     //        gumbo doesn't know about it so it can get it...
 
-    const playData = doc.getElementByTagName("player-control")[0].data;
+    console.log("try to get player control data....")
+    const playData = decrypt.UASJsonDecrypt(htmlText);
+    console.log({playData:playData})
     // fixme: noindex unknown tag........
 
     playData.forEach(function(data) {
@@ -225,7 +230,6 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
             });
         }
     })
-    */
 
     page.loading = false;
 

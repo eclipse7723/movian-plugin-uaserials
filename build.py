@@ -7,6 +7,12 @@ import json
 class Params():
     plugin_desc_name = "plugin.json"
     plugin_name = "movian-plugin-uaserials"
+    dependencies = [
+        "jsconfig.json",
+        "uaserials/crypto-js.js",
+        "uaserials/decrypt.js",
+        "uaserials/test.js",
+    ]
     include_version = True
 
 
@@ -17,7 +23,7 @@ def compress_to_zip(zip_filename, files):
     
     with zipfile.ZipFile(zip_filename, 'w') as zipf:
         for file in files:
-            zipf.write(file, os.path.basename(file))
+            zipf.write(file, file)
             print(f'Добавлен файл в архив: {file}')
 
 
@@ -30,6 +36,7 @@ def build():
         plugin_desc = json.load(f)
 
     files = [desc_name, plugin_desc["icon"], plugin_desc["file"]]
+    files += Params.dependencies
 
     try:
         zip_filename = Params.plugin_name
