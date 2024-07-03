@@ -1,3 +1,3 @@
-export function test(msg) {
+exports.test = function(msg) {
     console.log("test msg "+ msg)
 }

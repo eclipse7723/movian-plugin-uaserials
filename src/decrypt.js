@@ -28,7 +28,7 @@ function UASDecrypt(cipherData) {
 
     // Конвертируем данные обратно в строку
     const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
-    console.log("Расшифрованный текст:", plaintext);
+    // console.log("Расшифрованный текст:", plaintext);
 
     return plaintext;
 }
@@ -57,9 +57,9 @@ function UASParsePlayerControl(html) {
             const attrValue = attrMatch[2];
             attributes[attrName] = attrValue;
         }
-        console.log(attributes);
+        //console.log(attributes);
     } else {
-        console.log('Tag <player-control .../> not found.');
+        console.error('Tag <player-control .../> not found.');
     }
 
     return attributes;

@@ -1,6 +1,5 @@
 import zipfile
 import os
-import sys
 import json
 
 
@@ -9,13 +8,14 @@ class Params():
     plugin_name = "movian-plugin-uaserials"
     dependencies = [
         "jsconfig.json",  # not working for `require` my local dependencies,
-        "uaserials/test.js"
     ]
     include = [
-        "uaserials/crypto-js.js",
-        "uaserials/decrypt.js",
+        "src/crypto-js.js",
+        "src/decrypt.js",
+        "src/api.js",
+        "src/movie-parser.js",
     ]
-    delete_temp_codefile = True
+    delete_temp_codefile = False
     include_version = True
 
 
