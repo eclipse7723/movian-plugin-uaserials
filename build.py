@@ -8,10 +8,6 @@ class Params():
     plugin_desc_name = "plugin.json"
     plugin_name = "movian-plugin-uaserials"
     dependencies = [
-        "jsconfig.json",
-        "uaserials/crypto-js.js",
-        "uaserials/decrypt.js",
-        "uaserials/test.js",
     ]
     include_version = True
 

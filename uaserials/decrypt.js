@@ -1,5 +1,5 @@
 const __UAS_PASSWORD = "297796CCB81D2551"
-var CryptoJS = require("./uaserials/crypto-js");
+const CryptoJS = require("uaserials/crypto-js");
 
 
 function UASDecrypt(cipherData) {
