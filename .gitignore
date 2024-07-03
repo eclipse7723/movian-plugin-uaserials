@@ -1,5 +1,8 @@
 .idea
-examples/
-*.zip
-__pycache__
 .env
+__pycache__
+
+# plugin builds
+*.zip
+# temp source code
+.plugin.js
