@@ -19,6 +19,7 @@ Run `build.py` and move zip file into Movian - do not unzip. Open "Plugins", fin
 
 * \`${x}\` - text formatting;
 * `let` keyword;
+* `string.includes`
 
 #### html parsing
 
