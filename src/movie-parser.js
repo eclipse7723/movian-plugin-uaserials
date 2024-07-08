@@ -94,7 +94,8 @@ function parseTvEpisode(page, movieData, season, episode) {
     const sounds = findSoundsByEpisode(movieData, season, episode);
 
     if (!sounds) {
-        // return;
+        // error handled in `findSoundsByEpisode`
+        // console.error("Not found sounds for " + season + " " + episode)
     }
 
     sounds.forEach(function(data) {
@@ -125,4 +126,26 @@ function parseTrailer(page, movieData) {
             title: movieData.title
         });
     })
+}
+
+/* видео */
+
+function parseVideoURL(href) {
+    const cdnSubstring = "://tortuga.wtf/vod/"
+    if (!href.match(cdnSubstring)) {
+        console.error("Unknown CDN url '" + href + "' - url must include '" + cdnSubstring + "'")
+        return null;
+    }
+
+    const HTML = fetchHTML(href);
+    const pattern = /file: "(.+)"/;
+    const match = HTML.match(pattern);
+
+    if (!match) {
+        console.error("Not found video url at '" + href + "' with pattern '" + pattern + "'")
+        return null;
+    }
+
+    const url = match[1];
+    return url;
 }

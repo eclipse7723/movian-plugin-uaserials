@@ -28,6 +28,10 @@ var currentMovieData;
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
 settings.globalSettings(PLUGIN.id, PLUGIN.title, PLUGIN_LOGO, PLUGIN.synopsis);
 
+// todo: add DEBUG setting
+// todo: add quality select if possible
+// todo: add button "next page"
+
 /* PAGES */
 
 new page.Route(PLUGIN.id + ":start", function(page) {
@@ -37,10 +41,6 @@ new page.Route(PLUGIN.id + ":start", function(page) {
     page.appendItem(PLUGIN.id + ':search:', 'search', {
         title: "Пошук на " + BASE_URL
     });
-    
-    // page.appendItem(PLUGIN.id + ":play-test:", "directory", {
-    //     title: "test"
-    // })
 
     var categories = [
         {name: "Серіали", tag: "/series"},
@@ -88,7 +88,6 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
 
-    console.log(href, title)
     page.loading = true;
 
     const htmlText = fetchHTML(href);
@@ -138,7 +137,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     parseTrailer(page, currentMovieData);
 
     page.appendPassiveItem("separator", '', {
-        title: "Дивитись онлайн"
+        title: "Дивитись онлайн (HLS)"
     });
 
     parseMovie(page, currentMovieData);
@@ -150,17 +149,14 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
     setPageHeader(page, "video", PLUGIN.id + " - " + title)
     
-    // fixme tortuga.wtf - load video path
-    // parse this link: <video preload="none" src="GET THIS LINK"></video>
-
-    // page.redirect(href);
-    page.source = href;
+    const videoURL = parseVideoURL(href);
+    page.source = videoURL;
 
     page.loading = false;
 });
 
 new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, title, season, episode) {
-    setPageHeader(page, "video", PLUGIN.id + " - " + title + " - озвучка")
+    setPageHeader(page, "directory", PLUGIN.id + " - " + title + " - озвучка")
 
     parseTvEpisode(page, currentMovieData, season, episode);
     page.loading = false;
@@ -178,7 +174,7 @@ function setupSearchPage(page, query) {
         page.loading = true;
         var url = searchUrl + "&search_start=" + nextPageNumber;
 
-        console.log("search at '" + url + "'...");
+        // console.log("search at '" + url + "'...");
 
         parseMovies(page, url);
         nextPageNumber++;

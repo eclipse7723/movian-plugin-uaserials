@@ -39,11 +39,11 @@ function UASJsonParse(plaintext) {
     return json;
 }
 
-function UASParsePlayerControl(html) {
+function UASParsePlayerControl(HTML) {
     const pattern = /<player-control\s+([^>]+)><\/player-control>/;
 
     // Поиск тега в строке
-    const match = html.match(pattern);
+    const match = HTML.match(pattern);
     const attributes = {};
     if (match) {
         const attributesString = match[1]; // Получаем строку с атрибутами
@@ -65,8 +65,8 @@ function UASParsePlayerControl(html) {
     return attributes;
 }
 
-function UASJsonDecrypt(html) {
-    const playerControlAttributes = UASParsePlayerControl(html);
+function UASJsonDecrypt(HTML) {
+    const playerControlAttributes = UASParsePlayerControl(HTML);
 
     const cipherData = UASJsonParse(playerControlAttributes["data-tag1"]);
     const defaultData = playerControlAttributes["data-default"];
