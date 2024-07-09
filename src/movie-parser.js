@@ -1,13 +1,15 @@
 
 // TEXT FORMATTING -----------------------------------------------
-function format(text, tag) {
-    return "<font><" + tag + ">" + text + "</" + tag + "></font>";
+const COLOR_GRAY = "7F7F7F"
+
+var RichText = function (x) {this.str = x.toString()};
+RichText.prototype.toRichString = function (x) {return this.str};
+
+function getColoredFormat(text, color) {
+    return '<font color="' + color + '">' + text + '</font>';
 }
-function i(text) {
-    return format(text, "i");
-}
-function b(text) {
-    return format(text, "b");
+function formatInfo(text) {
+    return getColoredFormat(text, COLOR_GRAY);
 }
 // ---------------------------------------------------------------
 
@@ -21,14 +23,29 @@ function parseMovies(page, href) {
         var children = item.children;
         const titleUa = children[1].textContent;
         const titleEn = children[2].textContent;
-        var itemTitle = titleUa;
-        // itemTitle += " " + i("(" + titleEn + ")");
         const itemHref = children[0].attributes.getNamedItem('href').value;
         const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
 
-        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + itemTitle.replace(":", " "), 'video', {
-            title: itemTitle,
+        var desc = "";
+        if (titleEn) {
+            desc += formatInfo("Оригінальна назва: <b>" + titleEn + "</b>");
+        }
+
+        const label1 = children[0].getElementByClassName("short-label-level-1")[0]
+        if (label1) {
+            desc += "\n" + formatInfo(label1.children[0].textContent);
+        }
+        const label2 = children[0].getElementByClassName("short-label-level-2")[0]
+        if (label2) {
+            desc += "\n" + formatInfo(label2.children[0].textContent);
+        }
+
+        var desc = new RichText(desc);
+
+        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
+            title: titleUa,
             icon: itemImg,
+            description: desc,
         });
         page.entries += 1
 
@@ -148,4 +165,35 @@ function parseVideoURL(href) {
 
     const url = match[1];
     return url;
+}
+
+/* paginator */
+
+function createPageLoader(page, searchUrlBuilder, startPageNumber) {
+    const itemsPerPage = 18;
+    var nextPageNumber = startPageNumber;
+    var hasNextPage = true;
+
+    page.entries = 0;
+
+    function loader() {
+        if (!hasNextPage) { return false; }
+    
+        page.loading = true;
+        var url = searchUrlBuilder(nextPageNumber);
+        
+        const expectedEntries = page.entries + itemsPerPage;
+        parseMovies(page, url);
+        if (page.entries != expectedEntries) {
+            hasNextPage = false;
+            page.loading = false;
+            return false;
+        }
+    
+        nextPageNumber++;
+        page.loading = false;
+        return true;
+    }
+
+    return loader;
 }

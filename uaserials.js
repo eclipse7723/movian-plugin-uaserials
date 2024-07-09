@@ -33,13 +33,11 @@ settings.createBool("debug", "Enable DEBUG", false, function (v) {service._debug
 
 function logDebug(message) {
     if (service._debug) {
-        console.log("[DEBUG] " + message)
+        console.log(message)
     }
 }
 
-// todo: add DEBUG setting
 // todo: add quality select if possible
-// todo: add button "next page"
 
 /* PAGES */
 
@@ -68,30 +66,15 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 
 new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
-    
-    page.loading = true;
-    page.entries = 0
-    parseMovies(page, BASE_URL + href)
 
-    // pagination --------------------
     function generateSearchURL(nextPage) {
         return BASE_URL + href + "/page/" + nextPage + "/"
     }
-    var nextPageNumber = 2;
 
-    function loader() {
-        var url = generateSearchURL(nextPageNumber);
+    var loader = createPageLoader(page, generateSearchURL, 1);
+    loader();
 
-        parseMovies(page, url);
-        nextPageNumber++;
-
-        // todo: check if next page exists
-    }
-
-    page.asyncPaginator = loader;   // fixme: loading not working ?
-    // -------------------------------
-
-    page.loading = false;
+    page.paginator = loader;
 });
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
@@ -169,28 +152,15 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
 function setupSearchPage(page, query) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
 
-    page.loading = true;
-
     var searchUrl = BASE_URL + "/index.php?do=search&story=" + query
-    var nextPageNumber = 1;
-
-    function loader() {
-        page.loading = true;
-        var url = searchUrl + "&search_start=" + nextPageNumber;
-
-        logDebug("search at '" + url + "'...");
-
-        parseMovies(page, url);
-        nextPageNumber++;
-
-        // todo: check if next page exists
-        page.loading = false;
+    function generateSearchURL(nextPageNumber) {
+        return searchUrl + "&search_start=" + nextPageNumber;
     }
-
-    page.asyncPaginator = loader;
+    
+    var loader = createPageLoader(page, generateSearchURL, 1);
     loader();
 
-    page.loading = false;
+    page.paginator = loader;
 }
 
 new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
