@@ -28,7 +28,6 @@ function UASDecrypt(cipherData) {
 
     // Конвертируем данные обратно в строку
     const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
-    // console.log("Расшифрованный текст:", plaintext);
 
     return plaintext;
 }

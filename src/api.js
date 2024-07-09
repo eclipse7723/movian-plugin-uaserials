@@ -10,7 +10,7 @@ function fetchHTML(href) {
             'user-agent': USER_AGENT,
         },
     });
-    console.log("fetch '" + href + "': status code is " + response.statuscode);
+    logDebug("fetch '" + href + "': status code is " + response.statuscode);
 
     response = response.toString();
     return response;

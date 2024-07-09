@@ -26,7 +26,16 @@ function setPageHeader(page, type, title) {
 
 var currentMovieData;
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
+
+/* SETTINGS */
 settings.globalSettings(PLUGIN.id, PLUGIN.title, PLUGIN_LOGO, PLUGIN.synopsis);
+settings.createBool("debug", "Enable DEBUG", false, function (v) {service._debug = v})
+
+function logDebug(message) {
+    if (service._debug) {
+        console.log("[DEBUG] " + message)
+    }
+}
 
 // todo: add DEBUG setting
 // todo: add quality select if possible
@@ -100,10 +109,8 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     for (var i = 0; i < detailsHTML.length; i++) {
         const item = detailsHTML[i];
         const detail = item.textContent;
-        // console.log("   > ", detail);
         details.push(detail);
     }
-    // console.log({details: details});
 
     var imdbRating = doc.getElementByClassName("short-rates")[0].getElementByTagName("a");
     if (imdbRating.length !== 0) {
@@ -111,13 +118,10 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     } else {
         imdbRating = undefined  // todo: try to fetch from IMDB api actual rating
     }
-    // console.log({imdbRating: imdbRating});
 
     var img = doc.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
-    // console.log({img: img});
 
     var description = doc.getElementByClassName("ftext")[0].textContent;
-    // console.log({description: description});
 
     /* setup info on the page */
 
@@ -132,7 +136,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     currentMovieData["title"] = title;
     currentMovieData["href"] = href;
     currentMovieData["img"] = href;
-    // console.log({currentMovieData:currentMovieData})
+    // logDebug({currentMovieData:currentMovieData})
 
     parseTrailer(page, currentMovieData);
 
@@ -174,7 +178,7 @@ function setupSearchPage(page, query) {
         page.loading = true;
         var url = searchUrl + "&search_start=" + nextPageNumber;
 
-        // console.log("search at '" + url + "'...");
+        logDebug("search at '" + url + "'...");
 
         parseMovies(page, url);
         nextPageNumber++;
