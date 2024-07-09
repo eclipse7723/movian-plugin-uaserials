@@ -137,7 +137,7 @@ function parseTrailer(page, movieData) {
         if (data.tabName !== "Трейлер") return;
 
         page.appendPassiveItem("separator", '', {
-            title: "Трейлер"
+            title: "Трейлер (HLS)"
         });
         page.appendItem(PLUGIN.id + ":play:" + data.url + ":" + movieData.title, "directory", {
             title: movieData.title
