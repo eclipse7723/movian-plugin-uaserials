@@ -8,6 +8,7 @@ const html = require('movian/html');
 /* CONSTANTS */
 
 const DEFAULT_PAGE_TYPE = "directory";
+const DEFAULT_DEBUG = false;
 const PLUGIN = JSON.parse(Plugin.manifest);
 // plugin constants
 const PLUGIN_LOGO = Plugin.path + PLUGIN.icon;
@@ -29,7 +30,9 @@ service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
 
 /* SETTINGS */
 settings.globalSettings(PLUGIN.id, PLUGIN.title, PLUGIN_LOGO, PLUGIN.synopsis);
-settings.createBool("debug", "Enable DEBUG", false, function (v) {service._debug = v})
+settings.createBool("debug", "Enable DEBUG", DEFAULT_DEBUG, function (v) {service._debug = v})
+settings._debug = DEFAULT_DEBUG;
+
 
 function logDebug(message) {
     if (service._debug) {
@@ -62,11 +65,35 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         })
     })
 
+    page.appendItem(PLUGIN.id + ":collections", "directory", {
+        title: "Добірки фільмів, серіалів і мультфільмів"
+    })
+
 });
 
 new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
+    function generateSearchURL(nextPage) {
+        return BASE_URL + href + "/page/" + nextPage + "/"
+    }
+
+    var loader = createPageLoader(page, generateSearchURL, 1);
+    loader();
+
+    page.paginator = loader;
+});
+
+new page.Route(PLUGIN.id + ":collections", function(page) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + "Добірки");
+    href = BASE_URL + "/collections"
+    
+    parseCollections(page, href)
+});
+
+new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+    
     function generateSearchURL(nextPage) {
         return BASE_URL + href + "/page/" + nextPage + "/"
     }
@@ -88,12 +115,18 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     // get details of movie (year, etc..)
     
     var detailsHTML = doc.getElementByClassName("short-list")[0].children;
-    var details = [];
+    var details = {};
     for (var i = 0; i < detailsHTML.length; i++) {
         const item = detailsHTML[i];
-        const detail = item.textContent;
-        details.push(detail);
+        if (!item.textContent) { continue; }
+        const match = item.textContent.match(/([^:]+):(.+)/);
+        if (match) {
+            const key = match[1].trim();
+            const value = match[2].trim();
+            details[key] = value;
+        }
     }
+    console.log(details)
 
     var imdbRating = doc.getElementByClassName("short-rates")[0].getElementByTagName("a");
     if (imdbRating.length !== 0) {
@@ -108,12 +141,21 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
     /* setup info on the page */
 
-    page.appendPassiveItem('video', '', {
+    infoData = {
         title: title,
         icon: img,
         description: description,
-        rating: imdbRating ? imdbRating * 10 : 0,
-    });
+    }
+    if (imdbRating) {
+        infoData.rating = imdbRating * 10;
+    }
+    if (details.hasOwnProperty("Рік")) {
+        infoData.year = parseInt(details["Рік"]);
+    }
+    if (details.hasOwnProperty("Жанр")) {
+        infoData.genre = new RichText(formatInfo(details["Жанр"]));
+    }
+    page.appendPassiveItem('video', '', infoData);
 
     currentMovieData = UASJsonDecrypt(htmlText);
     currentMovieData["title"] = title;

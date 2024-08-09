@@ -11,7 +11,39 @@ function getColoredFormat(text, color) {
 function formatInfo(text) {
     return getColoredFormat(text, COLOR_GRAY);
 }
+function formatBold(text) {
+    return "<b>" + text + "</b>";
+}
 // ---------------------------------------------------------------
+
+
+function parseCollections(page, href) {
+    /* Парсит страницы с коллекциями фильмов и сериалов */
+    var doc = fetchDoc(href);
+
+    var items = doc.getElementById("dle-content").children;
+    items.forEach(function(item) {
+        var data = item.children[0];    // tag 'a'
+        var children = data.children;   // tags 'img', div 'uas-col-title', div 'uas-col-count'
+
+        const title = children[1].textContent;
+        const itemHref = data.attributes.getNamedItem('href').value;
+        const itemImg = children[0].attributes.getNamedItem('data-src').value;
+        const itemCount = children[2].textContent;
+        
+        var desc = "";
+        desc += formatInfo("Повна назва: " + formatBold(title))
+        desc += "\n" + formatInfo("Кількість в цій добірці: " + formatBold(itemCount));
+        var desc = new RichText(desc);
+
+        page.appendItem(PLUGIN.id + ":collection:" + itemHref + ":" + title.replace(":", ""), 'video', {
+            title: title,
+            icon: itemImg,
+            description: desc,
+        });
+        page.entries += 1
+    });
+}
 
 
 function parseMovies(page, href) {
@@ -28,16 +60,16 @@ function parseMovies(page, href) {
 
         var desc = "";
         if (titleEn) {
-            desc += formatInfo("Оригінальна назва: <b>" + titleEn + "</b>");
+            desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
         }
 
         const label1 = children[0].getElementByClassName("short-label-level-1")[0]
         if (label1) {
-            desc += "\n" + formatInfo(label1.children[0].textContent);
+            desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
         }
         const label2 = children[0].getElementByClassName("short-label-level-2")[0]
         if (label2) {
-            desc += "\n" + formatInfo(label2.children[0].textContent);
+            desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
         }
 
         var desc = new RichText(desc);
@@ -183,7 +215,16 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
         var url = searchUrlBuilder(nextPageNumber);
         
         const expectedEntries = page.entries + itemsPerPage;
-        parseMovies(page, url);
+        
+        try {
+            parseMovies(page, url);
+        } catch (e) {
+            console.error("loading page " + nextPageNumber + " failed -> " + href + ":" + e)
+            hasNextPage = false;
+            page.loading = false;
+            return false;
+        }
+        
         if (page.entries != expectedEntries) {
             hasNextPage = false;
             page.loading = false;
