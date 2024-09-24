@@ -12,7 +12,7 @@ const DEFAULT_DEBUG = false;
 const PLUGIN = JSON.parse(Plugin.manifest);
 // plugin constants
 const PLUGIN_LOGO = Plugin.path + PLUGIN.icon;
-const BASE_URL = "https://uaserials.pro";
+const BASE_URL = "https://uaserials.com";
 
 /* PLUGIN CODE */
 
