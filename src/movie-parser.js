@@ -180,9 +180,10 @@ function parseTrailer(page, movieData) {
 /* видео */
 
 function parseVideoURL(href) {
-    const cdnSubstring = "://tortuga.wtf/vod/"
-    if (!href.match(cdnSubstring)) {
-        console.error("Unknown CDN url '" + href + "' - url must include '" + cdnSubstring + "'")
+    const cdnSubstring1 = "://tortuga.wtf/";
+    const cdnSubstring2 = "://tortuga.tw/";
+    if (!href.match(cdnSubstring1) && !href.match(cdnSubstring2)) {
+        console.error("Unknown CDN url '" + href + "' - url must include '" + cdnSubstring1 + "' or '" + cdnSubstring1 + "'");
         return null;
     }
 
