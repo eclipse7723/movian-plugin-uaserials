@@ -3,7 +3,7 @@ import os
 import json
 
 
-class Params():
+class Params:
     plugin_desc_name = "plugin.json"
     plugin_name = "movian-plugin-uaserials"
     dependencies = [
@@ -19,7 +19,9 @@ class Params():
     include_version = True
 
 
-def compress_to_zip(zip_filename, files, specific_names=None):
+def compress_to_zip(zip_filename: str, files: list[str], specific_names: dict = None) -> None:
+    """ takes list of files and zips them into `zip_filename`.zip """
+
     for file in files:
         if os.path.exists(file) is False:
             raise FileNotFoundError(f'compress_to_zip - Не найден файл: {file!r}')
@@ -31,14 +33,18 @@ def compress_to_zip(zip_filename, files, specific_names=None):
             if filename not in files:
                 raise FileNotFoundError(f"compress_to_zip - Неизвестное имя {filename!r} в настройках имен specific_names")
     
-    with zipfile.ZipFile(zip_filename, 'w') as zipf:
+    with zipfile.ZipFile(zip_filename, 'w') as f:
         for file in files:
             filename = specific_names.get(file, file)
-            zipf.write(file, filename)
+            f.write(file, filename)
             print(f'Добавлен файл в архив: {filename!r} (source: {file})')
 
 
-def makeSourceCode(output_filename, include=()):
+def make_source_code(output_filename: str, include: list[str] = ()) -> str:
+    """ creates source code from `include` and saves it to `output_filename`
+        :returns: path to the created zip-file
+    """
+
     output_path = os.path.abspath("." + output_filename)
     with open(output_path, 'w', encoding='utf-8') as outfile:
         print(f"Создан файл с кодом плагина: {output_path!r}")
@@ -54,7 +60,9 @@ def makeSourceCode(output_filename, include=()):
     return output_path
 
 
-def readDescFile():
+def read_desc_file() -> dict:
+    """ loads plugin description from `Params.plugin_desc_name` """
+
     desc_name = Params.plugin_desc_name
     if os.path.exists(desc_name) is False:
         raise FileNotFoundError(f"readDescFile - Не найден файл с настройками плагина {desc_name!r}")
@@ -65,17 +73,19 @@ def readDescFile():
     return plugin_desc
 
 
-def build():
+def build() -> str:
+    """ builds plugin and returns path to the created zip-file with plugin inside """
+
     def __enum_list_of_strings(list_of_strings):
         for string in list_of_strings:
             print(f"    - {string}")
 
-    plugin_desc = readDescFile()
+    plugin_desc = read_desc_file()
 
     source_code_list = Params.include + [plugin_desc["file"]]   # code dependencies first, then main file
     print(f"* Источники исходного кода:")
     __enum_list_of_strings(source_code_list)
-    source_code_path = makeSourceCode("plugin.js", source_code_list)
+    source_code_path = make_source_code("plugin.js", source_code_list)
 
     files = [Params.plugin_desc_name, plugin_desc["icon"], source_code_path]
     if len(Params.dependencies) != 0:
@@ -102,9 +112,11 @@ def build():
         os.remove(source_code_path)
 
     print(f'\nПлагин создан: {os.path.abspath(zip_filename)} - версия {plugin_desc["version"]}')
-    print(f'Переместите его на флешку, подключите флешку к PS3, откройте в Movian эту флешку, найдите zip файл и установите плагин!')
+    print(f'Переместите его на флешку, подключите флешку к PS3, '
+          f'откройте в Movian эту флешку, найдите zip файл и установите плагин!')
 
     return zip_filename
+
 
 if __name__ == "__main__":
     build()
