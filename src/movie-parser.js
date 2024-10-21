@@ -123,7 +123,7 @@ function findSoundsByEpisode(movieData, season, episode) {
 
         data.seasons.forEach(function(seasonData) {
             seasonData.episodes.forEach(function(episodeData) {
-                if (seasonData.title == season && episodeData.title == episode) {
+                if (seasonData.title === season && episodeData.title == episode) {
                     sounds = episodeData.sounds;
                 }
             });
@@ -144,11 +144,16 @@ function parseTvEpisode(page, movieData, season, episode) {
 
     if (!sounds) {
         // error handled in `findSoundsByEpisode`
-        // console.error("Not found sounds for " + season + " " + episode)
     }
 
     sounds.forEach(function(data) {
-        page.appendItem(PLUGIN.id + ":play:" + data.url + ":" + movieData.title, "directory", {
+        const playData = JSON.stringify({
+            title: movieData.title,
+            href: data.url,
+            season: season,
+            episode: episode
+        })
+        page.appendItem(PLUGIN.id + ":play:" + playData, "directory", {
             title: data.title
         });
     })
@@ -157,7 +162,11 @@ function parseTvEpisode(page, movieData, season, episode) {
 /* фильм */
 
 function __parseMovieVideo(page, movieData, videoUrl) {
-    page.appendItem(PLUGIN.id + ":play:" + videoUrl + ":" + movieData.title, "directory", {
+    const playData = JSON.stringify({
+        title: movieData.title,
+        href: videoUrl,
+    })
+    page.appendItem(PLUGIN.id + ":play:" + playData, "directory", {
         title: movieData.title
     });
 }
@@ -171,7 +180,12 @@ function parseTrailer(page, movieData) {
         page.appendPassiveItem("separator", '', {
             title: "Трейлер (HLS)"
         });
-        page.appendItem(PLUGIN.id + ":play:" + data.url + ":" + movieData.title, "directory", {
+
+        const playData = JSON.stringify({
+            title: movieData.title,
+            href: data.url,
+        })
+        page.appendItem(PLUGIN.id + ":play:" + playData, "directory", {
             title: movieData.title
         });
     })

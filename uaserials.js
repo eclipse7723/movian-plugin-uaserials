@@ -141,7 +141,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
     /* setup info on the page */
 
-    infoData = {
+    var infoData = {
         title: title,
         icon: img,
         description: description,
@@ -160,7 +160,12 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     currentMovieData = UASJsonDecrypt(htmlText);
     currentMovieData["title"] = title;
     currentMovieData["href"] = href;
-    currentMovieData["img"] = href;
+    currentMovieData["img"] = img;
+    currentMovieData["description"] = description;
+    currentMovieData["rating"] = infoData.rating;
+    currentMovieData["year"] = infoData.year;
+    currentMovieData["genre"] = infoData.genre;
+
     // logDebug({currentMovieData:currentMovieData})
 
     parseTrailer(page, currentMovieData);
@@ -175,11 +180,23 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
 });
 
-new page.Route(PLUGIN.id + ':play:(.*):(.*)', function(page, href, title) {
-    setPageHeader(page, "video", PLUGIN.id + " - " + title)
+new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
+    data = JSON.parse(data);
+
+    setPageHeader(page, "video", PLUGIN.id + " - " + data.title)
     
-    const videoURL = parseVideoURL(href);
-    page.source = videoURL;
+    page.type = 'video';
+    page.source = 'videoparams:' + JSON.stringify({
+      title: data.title + (data.season ? ": " + data.season + " " + data.episode : ""),
+      sources: [{
+        url: "hls:" + parseVideoURL(data.href),
+      }],
+      year: data.year ? data.year : 0,
+      // season: data.season ? data.season : -1,
+      // episode: data.episode ? data.episode : -1,
+      no_subtitle_scan: false,  // Don't scan for subtitles at all
+      no_fs_scan: false,  // Don't scan FS for subtitles
+    });
 
     page.loading = false;
 });
