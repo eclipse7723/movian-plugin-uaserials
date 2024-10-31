@@ -180,15 +180,14 @@ function parseFilterQuery(filterData) {
 }
 
 function parseListFilters(page, tag, title) {
-    var pageId = ":list:";
-
     function putItem(name, filterData) {
-        page.appendItem(PLUGIN.id + pageId + tag + ":" + title + ":" + filterData, "directory", {
+        page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":" + filterData, "directory", {
             title: name
-        })
+        });
     }
 
     // скачаем страницу и спарсим оттуда фильтры
+    const href = BASE_URL + tag;
     var doc = fetchDoc(href);
 
     if (!doc.getElementByClassName("filter-block")) {
