@@ -326,7 +326,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
             return false;
         }
         
-        if (page.entries !== expectedEntries) {
+        if (parseInt(page.entries) !== expectedEntries) {
             hasNextPage = false;
             page.loading = false;
             return false;
