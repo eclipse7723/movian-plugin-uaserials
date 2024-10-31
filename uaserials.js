@@ -75,7 +75,7 @@ new page.Route(PLUGIN.id + ":pre-list:(.*):(.*)", function(page, tag, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     try {
-        parseListFilters(page, tag);
+        parseListFilters(page, tag, title);
     } catch (e) {
         console.log("Error while parsing list filters: " + e);
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");

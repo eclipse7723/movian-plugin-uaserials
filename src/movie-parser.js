@@ -30,7 +30,7 @@ function parseCollections(page, href) {
         const itemHref = data.attributes.getNamedItem('href').value;
         const itemImg = children[0].attributes.getNamedItem('data-src').value;
         const itemCount = children[2].textContent;
-        
+
         var desc = "";
         desc += formatInfo("Повна назва: " + formatBold(title))
         desc += "\n" + formatInfo("Кількість в цій добірці: " + formatBold(itemCount));
@@ -214,13 +214,12 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
-    // filter-wrap -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
+    // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
     // inside pairs (select, div), ... We need only `select` items,
     // as they contain filter's data (as `option` elements, 1st option always empty) for each key
 
-    items.forEach(function(item) {
-        if (item.tagName !== "select") return;
+    items.getElementByTagName("select").forEach(function(item) {
         const filterKey = item.attributes.getNamedItem('name').value; // api key
         const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
 
@@ -228,14 +227,17 @@ function parseListFilters(page, tag, title) {
             title: filterName
         });
 
-        const options = item.children;
-        options.forEach(function(option) {
-            if (option.tagName !== "option") return;
-            const filterValue = option.attributes.getNamedItem('value').value;
+        item.children.forEach(function(option) {
             const filterTitle = option.textContent;
-            if (filterValue) {
-                putItem(filterTitle, filterKey + "=" + filterValue);
+
+            if (!filterTitle) { return; }
+
+            var filterValue = filterTitle;  // in case if api value = title
+            if (option.attributes.getNamedItem('value')) {
+                filterValue = option.attributes.getNamedItem('value').value;
             }
+
+            putItem(filterTitle, filterKey + "=" + filterValue);
         });
     });
 
@@ -311,12 +313,12 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
 
     function loader() {
         if (!hasNextPage) { return false; }
-    
+
         page.loading = true;
         var url = searchUrlBuilder(nextPageNumber);
-        
+
         const expectedEntries = page.entries + itemsPerPage;
-        
+
         try {
             parseMovies(page, url);
         } catch (e) {
@@ -325,13 +327,13 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
             page.loading = false;
             return false;
         }
-        
+
         if (parseInt(page.entries) !== expectedEntries) {
             hasNextPage = false;
             page.loading = false;
             return false;
         }
-    
+
         nextPageNumber++;
         page.loading = false;
         return true;
