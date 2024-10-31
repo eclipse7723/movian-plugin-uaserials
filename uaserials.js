@@ -85,7 +85,7 @@ new page.Route(PLUGIN.id + ":pre-list:(.*):(.*)", function(page, tag, title) {
 new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, filterQuery) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
-    const query = filterQuery === "all" ? "" : filterQuery;
+    const query = filterQuery === "all" ? "" : "/f/" + filterQuery;
 
     function generateSearchURL(nextPage) {
         return BASE_URL + tag + query + "/page/" + nextPage + "/"

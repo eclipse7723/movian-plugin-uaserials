@@ -320,7 +320,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
         try {
             parseMovies(page, url);
         } catch (e) {
-            console.error("loading page " + nextPageNumber + " failed -> " + href + ":" + e)
+            console.error("loading page " + nextPageNumber + " failed -> " + url + ":" + e)
             hasNextPage = false;
             page.loading = false;
             return false;
