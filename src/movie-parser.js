@@ -34,7 +34,7 @@ function parseCollections(page, href) {
         var desc = "";
         desc += formatInfo("Повна назва: " + formatBold(title))
         desc += "\n" + formatInfo("Кількість в цій добірці: " + formatBold(itemCount));
-        var desc = new RichText(desc);
+        desc = new RichText(desc);
 
         page.appendItem(PLUGIN.id + ":collection:" + itemHref + ":" + title.replace(":", ""), 'video', {
             title: title,
@@ -72,7 +72,7 @@ function parseMovies(page, href) {
             desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
         }
 
-        var desc = new RichText(desc);
+        desc = new RichText(desc);
 
         page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
             title: titleUa,
@@ -123,7 +123,7 @@ function findSoundsByEpisode(movieData, season, episode) {
 
         data.seasons.forEach(function(seasonData) {
             seasonData.episodes.forEach(function(episodeData) {
-                if (seasonData.title === season && episodeData.title == episode) {
+                if (seasonData.title === season && episodeData.title === episode) {
                     sounds = episodeData.sounds;
                 }
             });
@@ -157,6 +157,93 @@ function parseTvEpisode(page, movieData, season, episode) {
             title: data.title
         });
     })
+}
+
+/* filters */
+
+function parseFilterQuery(filterData) {
+    const filterTemplate = "/f/{query}";
+    const possibleFilters = ["year", "imdb", "cat", "country", "channel"];
+    var queries = [];
+
+    possibleFilters.forEach(function(filterKey) {
+        if (!filterData.hasOwnProperty(filterKey)) return;
+        var filterValue = filterData[filterKey];
+
+        if (filterValue.length === 0) return;
+
+        const query = filterKey + "=" + filterValue.join(";");
+        queries.push(query);
+    })
+
+    return filterTemplate.replace("{query}", queries.join("/"));
+}
+
+function parseListFilters(page, tag, title) {
+    var pageId = ":list:";
+
+    function putItem(name, filterData) {
+        page.appendItem(PLUGIN.id + pageId + tag + ":" + title + ":" + filterData, "directory", {
+            title: name
+        })
+    }
+
+    // скачаем страницу и спарсим оттуда фильтры
+    var doc = fetchDoc(href);
+
+    if (!doc.getElementByClassName("filter-block")) {
+        throw "Not found filter-block";
+    }
+
+    putItem("Усі " + title, "all");
+
+    page.appendPassiveItem("separator", "", {
+        title: "Роки"
+    });
+    putItem("2020+", "year=2020;" + new Date().getFullYear().toString());
+    putItem("2010-2019", "year=2010;2019");
+    putItem("2000-2009", "year=2000;2009");
+    putItem("1920-1999", "year=1920;1999");
+
+    page.appendPassiveItem("separator", "", {
+        title: "Рейтинг IMDb"
+    });
+    putItem("8+", "imdb=8;10");
+    putItem("6+", "imdb=6;10");
+    putItem("4-6", "imdb=4;6");
+    putItem("0-3", "imdb=0;3");
+
+    /* создаем список жанров, стран, телеканалов (если есть) */
+
+    // filter-wrap -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
+    var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
+    // inside pairs (select, div), ... We need only `select` items,
+    // as they contain filter's data (as `option` elements, 1st option always empty) for each key
+
+    items.forEach(function(item) {
+        if (item.tagName !== "select") return;
+        const filterKey = item.attributes.getNamedItem('name').value; // api key
+        const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
+
+        page.appendPassiveItem("separator", "", {
+            title: filterName
+        });
+
+        const options = item.children;
+        options.forEach(function(option) {
+            if (option.tagName !== "option") return;
+            const filterValue = option.attributes.getNamedItem('value').value;
+            const filterTitle = option.textContent;
+            if (filterValue) {
+                putItem(filterTitle, filterKey + "=" + filterValue);
+            }
+        });
+    });
+
+}
+
+function appendPossibleFilters(page) { // todo
+    /* добавляет возможные фильтры в сайд-меню, указанные на странице (года, жанры, страны и так далее) */
 }
 
 /* фильм */
@@ -240,7 +327,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
             return false;
         }
         
-        if (page.entries != expectedEntries) {
+        if (page.entries !== expectedEntries) {
             hasNextPage = false;
             page.loading = false;
             return false;

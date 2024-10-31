@@ -60,7 +60,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Аніме", tag: "/anime"},
     ];
     categories.forEach(function(data) {
-        page.appendItem(PLUGIN.id + ":list:" + data.tag + ":" + data.name, "directory", {
+        page.appendItem(PLUGIN.id + ":pre-list:" + data.tag + ":" + data.name, "directory", {
             title: data.name
         })
     })
@@ -71,11 +71,24 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 
 });
 
-new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
+new page.Route(PLUGIN.id + ":pre-list:(.*):(.*)", function(page, tag, title) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
+    try {
+        parseListFilters(page, tag);
+    } catch (e) {
+        console.log("Error while parsing list filters: " + e);
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+    }
+});
+
+new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, filterQuery) {
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    const query = filterQuery === "all" ? "" : filterQuery;
+
     function generateSearchURL(nextPage) {
-        return BASE_URL + href + "/page/" + nextPage + "/"
+        return BASE_URL + tag + query + "/page/" + nextPage + "/"
     }
 
     var loader = createPageLoader(page, generateSearchURL, 1);
@@ -86,9 +99,9 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
 
 new page.Route(PLUGIN.id + ":collections", function(page) {
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + "Добірки");
-    href = BASE_URL + "/collections"
+    var href = BASE_URL + "/collections"
     
-    parseCollections(page, href)
+    parseCollections(page, href);
 });
 
 new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) {
