@@ -45,6 +45,7 @@ function logDebug(message) {
 /* PAGES */
 
 new page.Route(PLUGIN.id + ":start", function(page) {
+    /* главная страница плагина */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
     page.loading = false;
 
@@ -60,7 +61,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Аніме", tag: "/anime"},
     ];
     categories.forEach(function(data) {
-        page.appendItem(PLUGIN.id + ":pre-list:" + data.tag + ":" + data.name, "directory", {
+        page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
             title: data.name
         })
     })
@@ -71,7 +72,21 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 
 });
 
-new page.Route(PLUGIN.id + ":pre-list:(.*):(.*)", function(page, tag, title) {
+new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
+    /* страница с выбором - все фильмы или фильтровать */
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
+        title: "Усі " + title + " ▶"
+    });
+
+    page.appendItem(PLUGIN.id + ":-filtered:" + tag + ":" + title, "directory", {
+        title: "Обрати категорію \ рік \ країну \ рейтинг ▶"
+    });
+});
+
+new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*)", function(page, tag, title) {
+    /* страница с фильтрами */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     try {
@@ -83,6 +98,7 @@ new page.Route(PLUGIN.id + ":pre-list:(.*):(.*)", function(page, tag, title) {
 });
 
 new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, filterQuery) {
+    /* страница со списком фильмов согласно прописанным фильтрам (all для отображения всех) */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     const query = filterQuery === "all" ? "" : "/f/" + filterQuery;
@@ -98,6 +114,7 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, fi
 });
 
 new page.Route(PLUGIN.id + ":collections", function(page) {
+    /* страница с подборками */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + "Добірки");
     var href = BASE_URL + "/collections"
     
@@ -105,6 +122,7 @@ new page.Route(PLUGIN.id + ":collections", function(page) {
 });
 
 new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) {
+    /* страница с фильмами из подборки */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
     
     function generateSearchURL(nextPage) {
@@ -118,6 +136,7 @@ new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) 
 });
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
+    /* страница с деталями фильма и перехода к просмотру */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
 
     page.loading = true;
@@ -194,6 +213,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 });
 
 new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
+    /* страница с плеером */
     data = JSON.parse(data);
 
     setPageHeader(page, "video", PLUGIN.id + " - " + data.title)
@@ -215,6 +235,7 @@ new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
 });
 
 new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, title, season, episode) {
+    /* страница с выбором озвучки */
     setPageHeader(page, "directory", PLUGIN.id + " - " + title + " - озвучка")
 
     parseTvEpisode(page, currentMovieData, season, episode);
@@ -222,6 +243,7 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
 });
 
 function setupSearchPage(page, query) {
+    /* поисковая страница */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
 
     var searchUrl = BASE_URL + "/index.php?do=search&story=" + query
@@ -236,9 +258,11 @@ function setupSearchPage(page, query) {
 }
 
 new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
+    /* страница с поиском внутри плагина */
     setupSearchPage(page, query);
 });
 
 new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
+    /* Searcher позволяет из мовиана использовать поиск в этом плагине */
     setupSearchPage(page, query);
 });

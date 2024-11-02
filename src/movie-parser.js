@@ -162,6 +162,8 @@ function parseTvEpisode(page, movieData, season, episode) {
 /* filters */
 
 function parseFilterQuery(filterData) {
+    /* makes query string from given filterData object */
+
     const filterTemplate = "/f/{query}";
     const possibleFilters = ["year", "imdb", "cat", "country", "channel"];
     var queries = [];
@@ -180,9 +182,11 @@ function parseFilterQuery(filterData) {
 }
 
 function parseListFilters(page, tag, title) {
+    /* creates buttons with filters on page */
+
     function putItem(name, filterData) {
         page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":" + filterData, "directory", {
-            title: name
+            title: name + " ▶"
         });
     }
 
@@ -194,12 +198,14 @@ function parseListFilters(page, tag, title) {
         throw "Not found filter-block";
     }
 
-    putItem("Усі " + title, "all");
+    // подгтовленные фильтры
 
     page.appendPassiveItem("separator", "", {
-        title: "Роки"
+        title: "Рік прем'єри"
     });
-    putItem("2020+", "year=2020;" + new Date().getFullYear().toString());
+    const thisYear = new Date().getFullYear().toString()
+    putItem("Цього року", "year=" + thisYear);
+    putItem("2020+", "year=2020;" + thisYear);
     putItem("2010-2019", "year=2010;2019");
     putItem("2000-2009", "year=2000;2009");
     putItem("1920-1999", "year=1920;1999");
@@ -214,6 +220,8 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
+    const allowedFilters = ["genre", "cat", "year", "imdb"]   // skip "channel"
+
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
     // inside pairs (select, div), ... We need only `select` items,
@@ -223,21 +231,22 @@ function parseListFilters(page, tag, title) {
         const filterKey = item.attributes.getNamedItem('name').value; // api key
         const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
 
+        if (!allowedFilters.indexOf(filterKey)) { return; }
+
         page.appendPassiveItem("separator", "", {
             title: filterName
         });
 
         item.children.forEach(function(option) {
-            const filterTitle = option.textContent;
+            const itemName = option.textContent;
+            if (!itemName) { return; }
 
-            if (!filterTitle) { return; }
-
-            var filterValue = filterTitle;  // in case if api value = title
+            var itemValue = itemName;  // in case if api value = title
             if (option.attributes.getNamedItem('value')) {
-                filterValue = option.attributes.getNamedItem('value').value;
+                itemValue = option.attributes.getNamedItem('value').value;
             }
 
-            putItem(filterTitle, filterKey + "=" + filterValue);
+            putItem(itemName, filterKey + "=" + itemValue);
         });
     });
 
@@ -262,6 +271,7 @@ function __parseMovieVideo(page, movieData, videoUrl) {
 /* трейлер */
 
 function parseTrailer(page, movieData) {
+    /* adds trailer button if possible */
     movieData.data.forEach(function(data) {
         if (data.tabName !== "Трейлер") return;
 
@@ -282,10 +292,17 @@ function parseTrailer(page, movieData) {
 /* видео */
 
 function parseVideoURL(href) {
-    const cdnSubstring1 = "://tortuga.wtf/";
-    const cdnSubstring2 = "://tortuga.tw/";
-    if (!href.match(cdnSubstring1) && !href.match(cdnSubstring2)) {
-        console.error("Unknown CDN url '" + href + "' - url must include '" + cdnSubstring1 + "' or '" + cdnSubstring1 + "'");
+    const allowedCDNs = ["://tortuga.wtf/", "://tortuga.tw/"]
+
+    var isValidSource = false;
+    for (var cdnSubstring of allowedCDNs) {
+        if (href.match(cdnSubstring)) {
+            isValidSource = true;
+            break;
+        }
+    }
+    if (!isValidSource) {
+        console.error("Unknown CDN url '" + href + "' - url must include one of " + allowedCDNs.join(" or "))
         return null;
     }
 
