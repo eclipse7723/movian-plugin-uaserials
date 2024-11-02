@@ -222,8 +222,8 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
-    const allowedFilters = ["genre", "cat", "year", "imdb"]   // skip "channel" from parse
-    const noGenresCategories = ["Мультфільми", "Мультсеріали"]
+    const allowedFilters = ["genre", "cat", "year", "imdb"];   // skip "channel" from parse
+    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
@@ -244,7 +244,7 @@ function parseListFilters(page, tag, title) {
         if (allowedFilters.indexOf(filterKey) === -1) return;
 
         // probably this filter is useless for this category of movies
-        if (filterKey === "genre" && noGenresCategories.indexOf(title)) return;
+        if (filterKey === "genre" && noGenresCategories.indexOf(title) !== -1) return;
 
         putSeparator(filterName);
 
