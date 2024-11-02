@@ -81,7 +81,7 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
     });
 
     page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
-        title: "Обрати категорію \ рік \ країну \ рейтинг ▶"
+        title: "Обрати категорію / рік / країну / рейтинг ▶"
     });
 });
 

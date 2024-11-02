@@ -220,7 +220,8 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
-    const allowedFilters = ["genre", "cat", "year", "imdb"]   // skip "channel"
+    const allowedFilters = ["genre", "cat", "year", "imdb", "channel"]   // skip "channel"
+    const maxChannels = 20;
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
@@ -231,13 +232,16 @@ function parseListFilters(page, tag, title) {
         const filterKey = item.attributes.getNamedItem('name').value; // api key
         const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
 
-        if (!allowedFilters.indexOf(filterKey)) { return; }
+        if (allowedFilters.indexOf(filterKey) === -1) { return; }
 
         page.appendPassiveItem("separator", "", {
             title: filterName
         });
 
+        var entries = 0;
         item.children.forEach(function(option) {
+            if (filterKey === "channel" && entries > maxChannels) { return; }
+            
             const itemName = option.textContent;
             if (!itemName) { return; }
 
@@ -247,6 +251,7 @@ function parseListFilters(page, tag, title) {
             }
 
             putItem(itemName, filterKey + "=" + itemValue);
+            entries += 1;
         });
     });
 
