@@ -45,6 +45,7 @@ function logDebug(message) {
 /* PAGES */
 
 new page.Route(PLUGIN.id + ":start", function(page) {
+    /* главная страница плагина */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
     page.loading = false;
 
@@ -60,22 +61,77 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Аніме", tag: "/anime"},
     ];
     categories.forEach(function(data) {
-        page.appendItem(PLUGIN.id + ":list:" + data.tag + ":" + data.name, "directory", {
-            title: data.name
+        page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
+            title: data.name + " ▶"
         })
     })
 
     page.appendItem(PLUGIN.id + ":collections", "directory", {
-        title: "Добірки фільмів, серіалів і мультфільмів"
+        title: "Добірки фільмів, серіалів і мультфільмів" + " ▶"
     })
 
 });
 
-new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
+new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
+    /* страница с выбором - все фильмы или фильтровать */
+
+    if (title === "Аніме") {
+        // отсутствие фильтров
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+        return;
+    }
+
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
+    page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
+        title: "Усі " + title.toLowerCase() + " ▶"
+    });
+
+    // todo: show popular movie from main site page
+    if (service._debug) {
+        page.appendItem(PLUGIN.id + ":list-main:" + tag + ":" + title, "directory", {
+            title: "В центрі уваги ▶"
+        });
+    }
+
+    // todo: make own button for each option...
+    page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
+        title: "Обрати категорію / рік / країну / рейтинг ▶"
+    });
+});
+
+new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*)", function(page, tag, title) {
+    /* страница с фильтрами */
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    try {
+        parseListFilters(page, tag, title);
+    } catch (e) {
+        console.log("Error while parsing list filters: " + e);
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+    }
+});
+
+new page.Route(PLUGIN.id + ":list-main:(.*):(.*)", function(page, tag, title) { // todo
+    /* страница с фильтрами с главной страницы сайта по тегу */
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title + " - В центрі уваги");
+
+    try {
+        parseListFromMain(page, tag, title);
+    } catch (e) {
+        console.log("Error while parsing list filters: " + e);
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+    }
+});
+
+new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, filterQuery) {
+    /* страница со списком фильмов согласно прописанным фильтрам (all для отображения всех) */
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    const query = filterQuery === "all" ? "" : "/f/" + filterQuery;
+
     function generateSearchURL(nextPage) {
-        return BASE_URL + href + "/page/" + nextPage + "/"
+        return BASE_URL + tag + query + "/page/" + nextPage + "/"
     }
 
     var loader = createPageLoader(page, generateSearchURL, 1);
@@ -85,13 +141,15 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*)", function(page, href, title) {
 });
 
 new page.Route(PLUGIN.id + ":collections", function(page) {
+    /* страница с подборками */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + "Добірки");
-    href = BASE_URL + "/collections"
+    var href = BASE_URL + "/collections"
     
-    parseCollections(page, href)
+    parseCollections(page, href);
 });
 
 new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) {
+    /* страница с фильмами из подборки */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
     
     function generateSearchURL(nextPage) {
@@ -105,6 +163,7 @@ new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) 
 });
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
+    /* страница с деталями фильма и перехода к просмотру */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
 
     page.loading = true;
@@ -181,6 +240,7 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 });
 
 new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
+    /* страница с плеером */
     data = JSON.parse(data);
 
     setPageHeader(page, "video", PLUGIN.id + " - " + data.title)
@@ -202,6 +262,7 @@ new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
 });
 
 new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, title, season, episode) {
+    /* страница с выбором озвучки */
     setPageHeader(page, "directory", PLUGIN.id + " - " + title + " - озвучка")
 
     parseTvEpisode(page, currentMovieData, season, episode);
@@ -209,6 +270,7 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
 });
 
 function setupSearchPage(page, query) {
+    /* поисковая страница */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
 
     var searchUrl = BASE_URL + "/index.php?do=search&story=" + query
@@ -223,9 +285,11 @@ function setupSearchPage(page, query) {
 }
 
 new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
+    /* страница с поиском внутри плагина */
     setupSearchPage(page, query);
 });
 
 new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
+    /* Searcher позволяет из мовиана использовать поиск в этом плагине */
     setupSearchPage(page, query);
 });

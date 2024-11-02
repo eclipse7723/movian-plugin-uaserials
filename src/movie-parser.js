@@ -30,11 +30,11 @@ function parseCollections(page, href) {
         const itemHref = data.attributes.getNamedItem('href').value;
         const itemImg = children[0].attributes.getNamedItem('data-src').value;
         const itemCount = children[2].textContent;
-        
+
         var desc = "";
         desc += formatInfo("Повна назва: " + formatBold(title))
         desc += "\n" + formatInfo("Кількість в цій добірці: " + formatBold(itemCount));
-        var desc = new RichText(desc);
+        desc = new RichText(desc);
 
         page.appendItem(PLUGIN.id + ":collection:" + itemHref + ":" + title.replace(":", ""), 'video', {
             title: title,
@@ -72,7 +72,7 @@ function parseMovies(page, href) {
             desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
         }
 
-        var desc = new RichText(desc);
+        desc = new RichText(desc);
 
         page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
             title: titleUa,
@@ -123,7 +123,7 @@ function findSoundsByEpisode(movieData, season, episode) {
 
         data.seasons.forEach(function(seasonData) {
             seasonData.episodes.forEach(function(episodeData) {
-                if (seasonData.title === season && episodeData.title == episode) {
+                if (seasonData.title === season && episodeData.title === episode) {
                     sounds = episodeData.sounds;
                 }
             });
@@ -159,6 +159,141 @@ function parseTvEpisode(page, movieData, season, episode) {
     })
 }
 
+/* filters */
+
+function parseFilterQuery(filterData) {
+    /* makes query string from given filterData object */
+
+    const filterTemplate = "/f/{query}";
+    const possibleFilters = ["year", "imdb", "cat", "country", "channel"];
+    var queries = [];
+
+    possibleFilters.forEach(function(filterKey) {
+        if (!filterData.hasOwnProperty(filterKey)) return;
+        var filterValue = filterData[filterKey];
+
+        if (filterValue.length === 0) return;
+
+        const query = filterKey + "=" + filterValue.join(";");
+        queries.push(query);
+    })
+
+    return filterTemplate.replace("{query}", queries.join("/"));
+}
+
+function parseListFilters(page, tag, title) {
+    /* creates buttons with filters on page */
+
+    function putItem(name, filterData) {
+        page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":" + filterData, "directory", {
+            title: name + " ▶"
+        });
+    }
+    function putSeparator(name) {
+        page.appendPassiveItem("separator", "", {
+            title: name
+        });
+    }
+
+    // скачаем страницу и спарсим оттуда фильтры
+    const href = BASE_URL + tag;
+    var doc = fetchDoc(href);
+
+    if (!doc.getElementByClassName("filter-block")) {
+        throw "Not found filter-block";
+    }
+
+    // подготовленные фильтры
+
+    const thisYear = new Date().getFullYear().toString()
+    putSeparator("Рік прем'єри")
+    putItem("Цього року", "year=" + thisYear + ";" + thisYear);
+    putItem("2020+", "year=2020;" + thisYear);
+    putItem("2010-2019", "year=2010;2019");
+    putItem("2000-2009", "year=2000;2009");
+    putItem("1920-1999", "year=1920;1999");
+
+    putSeparator("Рейтинг IMDb")
+    putItem("9+", "imdb=9;10");
+    putItem("8+", "imdb=8;10");
+    putItem("6+", "imdb=6;10");
+    putItem("4-6", "imdb=4;6");
+    putItem("0-3", "imdb=0;3");
+
+    /* создаем список жанров, стран, телеканалов (если есть) */
+
+    const allowedFilters = ["cat", "year", "imdb"];   // skip "channel" from parse
+    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
+
+    // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
+    var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
+    // inside pairs (select, div), ... We need only `select` items,
+    // as they contain filter's data (as `option` elements, 1st option always empty) for each key
+
+    var hasChannels = false;
+
+    items.getElementByTagName("select").forEach(function(item) {
+        const filterKey = item.attributes.getNamedItem('name').value; // api key
+        const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
+
+        if (filterKey === "channel") {
+            hasChannels = true;
+        }
+
+        // excluded filter
+        if (allowedFilters.indexOf(filterKey) === -1) return;
+
+        // probably this filter is useless for this category of movies
+        if (filterKey === "cat" && noGenresCategories.indexOf(title) !== -1) return;
+
+        putSeparator(filterName);
+
+        var entries = 0;
+        item.children.forEach(function(option) {
+            const itemName = option.textContent;
+            if (!itemName) return; // empty value
+
+            var itemValue = itemName;  // in case if api value = title
+            if (option.attributes.getNamedItem('value')) {
+                itemValue = option.attributes.getNamedItem('value').value;
+            }
+
+            putItem(itemName, filterKey + "=" + itemValue);
+            entries += 1;
+        });
+    });
+
+    if (hasChannels) {
+        putSeparator("Телеканал");
+        
+        // channels with 18 and more movies (some exceptions to young but popular channels)
+        const popularChannels = [
+            "Netflix", "BBC", "Amazon", "Apple TV+", "HBO", "FX", "Hulu", "CBS", "Paramount+",
+            "Nickelodeon", "AMC", "Disney", "National Geographic", "Fox", "Sci Fi Channel", "DC Universe",
+            "Discovery", "Showtime", "NBC", "The CW", "ABC", "ITV", "Peacock", "Channel 4", "Cartoon Network",
+            "Starz", "USA Network", "Sky Atlantic", "Rai 1", "TNT", "Sky1", "Syfy", "Comedy Central",
+            "ZDF", "TF1", "France 2", "CBC", "YouTube Premium", "1+1"
+        ]
+
+        popularChannels.forEach(function(channel) {
+            putItem(channel, "channel=" + channel.replace("+", "ppp"));
+        })
+    }
+
+}
+
+function appendPossibleFilters(page) { // todo
+    /* добавляет возможные фильтры в сайд-меню, указанные на странице (года, жанры, страны и так далее) */
+    throw "not realized yet"
+}
+
+/* main page list */
+
+function parseListFromMain(page, tag, title) {  // todo
+    /* добавляет на страницу список фильмов с главной страницы */
+    throw "not realized yet"
+}
+
 /* фильм */
 
 function __parseMovieVideo(page, movieData, videoUrl) {
@@ -174,6 +309,7 @@ function __parseMovieVideo(page, movieData, videoUrl) {
 /* трейлер */
 
 function parseTrailer(page, movieData) {
+    /* adds trailer button if possible */
     movieData.data.forEach(function(data) {
         if (data.tabName !== "Трейлер") return;
 
@@ -194,10 +330,18 @@ function parseTrailer(page, movieData) {
 /* видео */
 
 function parseVideoURL(href) {
-    const cdnSubstring1 = "://tortuga.wtf/";
-    const cdnSubstring2 = "://tortuga.tw/";
-    if (!href.match(cdnSubstring1) && !href.match(cdnSubstring2)) {
-        console.error("Unknown CDN url '" + href + "' - url must include '" + cdnSubstring1 + "' or '" + cdnSubstring1 + "'");
+    const allowedCDNs = ["://tortuga.wtf/", "://tortuga.tw/"]
+
+    var isValidSource = false;
+    for (var i in allowedCDNs) {
+        const cdnSubstring = allowedCDNs[i];
+        if (href.match(cdnSubstring)) {
+            isValidSource = true;
+            break;
+        }
+    }
+    if (!isValidSource) {
+        console.error("Unknown CDN url '" + href + "' - url must include one of " + allowedCDNs.join(" or "))
         return null;
     }
 
@@ -224,28 +368,28 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
     page.entries = 0;
 
     function loader() {
-        if (!hasNextPage) { return false; }
-    
+        if (!hasNextPage) return false;
+
         page.loading = true;
         var url = searchUrlBuilder(nextPageNumber);
-        
+
         const expectedEntries = page.entries + itemsPerPage;
-        
+
         try {
             parseMovies(page, url);
         } catch (e) {
-            console.error("loading page " + nextPageNumber + " failed -> " + href + ":" + e)
+            console.error("loading page " + nextPageNumber + " failed -> " + url + ":" + e)
             hasNextPage = false;
             page.loading = false;
             return false;
         }
-        
-        if (page.entries != expectedEntries) {
+
+        if (parseInt(page.entries) !== expectedEntries) {
             hasNextPage = false;
             page.loading = false;
             return false;
         }
-    
+
         nextPageNumber++;
         page.loading = false;
         return true;
