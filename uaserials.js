@@ -80,7 +80,7 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
         title: "Усі " + title + " ▶"
     });
 
-    page.appendItem(PLUGIN.id + ":-filtered:" + tag + ":" + title, "directory", {
+    page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
         title: "Обрати категорію \ рік \ країну \ рейтинг ▶"
     });
 });
