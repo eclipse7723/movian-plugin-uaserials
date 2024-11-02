@@ -74,6 +74,13 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 
 new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
     /* страница с выбором - все фильмы или фильтровать */
+
+    if (title === "Аніме") {
+        // отсутствие фильтров
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+        return;
+    }
+
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {

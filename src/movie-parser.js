@@ -222,7 +222,7 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
-    const allowedFilters = ["genre", "cat", "year", "imdb"];   // skip "channel" from parse
+    const allowedFilters = ["cat", "year", "imdb"];   // skip "channel" from parse
     const noGenresCategories = ["Мультсеріали", "Мультфільми"];
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
@@ -244,7 +244,7 @@ function parseListFilters(page, tag, title) {
         if (allowedFilters.indexOf(filterKey) === -1) return;
 
         // probably this filter is useless for this category of movies
-        if (filterKey === "genre" && noGenresCategories.indexOf(title) !== -1) return;
+        if (filterKey === "cat" && noGenresCategories.indexOf(title) !== -1) return;
 
         putSeparator(filterName);
 
@@ -284,12 +284,13 @@ function parseListFilters(page, tag, title) {
 
 function appendPossibleFilters(page) { // todo
     /* добавляет возможные фильтры в сайд-меню, указанные на странице (года, жанры, страны и так далее) */
+    throw "not realized yet"
 }
 
 /* main page list */
 
-function parseListFromMain(page, tag, title) {
-    // todo
+function parseListFromMain(page, tag, title) {  // todo
+    /* добавляет на страницу список фильмов с главной страницы */
     throw "not realized yet"
 }
 
