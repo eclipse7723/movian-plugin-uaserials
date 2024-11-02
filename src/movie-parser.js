@@ -207,13 +207,14 @@ function parseListFilters(page, tag, title) {
 
     const thisYear = new Date().getFullYear().toString()
     putSeparator("Рік прем'єри")
-    putItem("Цього року", "year=" + thisYear);
+    putItem("Цього року", "year=" + thisYear + ";" + thisYear);
     putItem("2020+", "year=2020;" + thisYear);
     putItem("2010-2019", "year=2010;2019");
     putItem("2000-2009", "year=2000;2009");
     putItem("1920-1999", "year=1920;1999");
 
     putSeparator("Рейтинг IMDb")
+    putItem("9+", "imdb=9;10");
     putItem("8+", "imdb=8;10");
     putItem("6+", "imdb=6;10");
     putItem("4-6", "imdb=4;6");
@@ -222,6 +223,7 @@ function parseListFilters(page, tag, title) {
     /* создаем список жанров, стран, телеканалов (если есть) */
 
     const allowedFilters = ["genre", "cat", "year", "imdb"]   // skip "channel" from parse
+    const noGenresCategories = ["Мультфільми", "Мультсеріали"]
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
@@ -238,7 +240,11 @@ function parseListFilters(page, tag, title) {
             hasChannels = true;
         }
 
+        // excluded filter
         if (allowedFilters.indexOf(filterKey) === -1) return;
+
+        // probably this filter is useless for this category of movies
+        if (filterKey === "genre" && noGenresCategories.indexOf(title)) return;
 
         putSeparator(filterName);
 
@@ -258,16 +264,16 @@ function parseListFilters(page, tag, title) {
     });
 
     if (hasChannels) {
-        // channels with 18 and more movies (some exceptions to young but popular channels)
         putSeparator("Телеканал");
-
+        
+        // channels with 18 and more movies (some exceptions to young but popular channels)
         const popularChannels = [
             "Netflix", "BBC", "Amazon", "Apple TV+", "HBO", "FX", "Hulu", "CBS", "Paramount+",
             "Nickelodeon", "AMC", "Disney", "National Geographic", "Fox", "Sci Fi Channel", "DC Universe",
             "Discovery", "Showtime", "NBC", "The CW", "ABC", "ITV", "Peacock", "Channel 4", "Cartoon Network",
             "Starz", "USA Network", "Sky Atlantic", "Rai 1", "TNT", "Sky1", "Syfy", "Comedy Central",
             "ZDF", "TF1", "France 2", "CBC", "YouTube Premium", "1+1"
-        ] // len = 30
+        ]
 
         popularChannels.forEach(function(channel) {
             putItem(channel, "channel=" + channel.replace("+", "ppp"));
