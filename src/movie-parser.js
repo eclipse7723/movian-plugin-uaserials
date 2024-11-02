@@ -280,6 +280,13 @@ function appendPossibleFilters(page) { // todo
     /* добавляет возможные фильтры в сайд-меню, указанные на странице (года, жанры, страны и так далее) */
 }
 
+/* main page list */
+
+function parseListFromMain(page, tag, title) {
+    // todo
+    throw "not realized yet"
+}
+
 /* фильм */
 
 function __parseMovieVideo(page, movieData, videoUrl) {

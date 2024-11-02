@@ -62,12 +62,12 @@ new page.Route(PLUGIN.id + ":start", function(page) {
     ];
     categories.forEach(function(data) {
         page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
-            title: data.name
+            title: data.name + " ▶"
         })
     })
 
     page.appendItem(PLUGIN.id + ":collections", "directory", {
-        title: "Добірки фільмів, серіалів і мультфільмів"
+        title: "Добірки фільмів, серіалів і мультфільмів" + " ▶"
     })
 
 });
@@ -77,9 +77,17 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
-        title: "Усі " + title + " ▶"
+        title: "Усі " + title.toLowerCase() + " ▶"
     });
 
+    // todo: show popular movie from main site page
+    if (service._debug) {
+        page.appendItem(PLUGIN.id + ":list-main:" + tag + ":" + title, "directory", {
+            title: "В центрі уваги ▶"
+        });
+    }
+
+    // todo: make own button for each option...
     page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
         title: "Обрати категорію / рік / країну / рейтинг ▶"
     });
@@ -91,6 +99,18 @@ new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*)", function(page, tag, title
 
     try {
         parseListFilters(page, tag, title);
+    } catch (e) {
+        console.log("Error while parsing list filters: " + e);
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+    }
+});
+
+new page.Route(PLUGIN.id + ":list-main:(.*):(.*)", function(page, tag, title) { // todo
+    /* страница с фильтрами с главной страницы сайта по тегу */
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title + " - В центрі уваги");
+
+    try {
+        parseListFromMain(page, tag, title);
     } catch (e) {
         console.log("Error while parsing list filters: " + e);
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
