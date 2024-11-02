@@ -189,6 +189,11 @@ function parseListFilters(page, tag, title) {
             title: name + " ▶"
         });
     }
+    function putSeparator(name) {
+        page.appendPassiveItem("separator", "", {
+            title: name
+        });
+    }
 
     // скачаем страницу и спарсим оттуда фильтры
     const href = BASE_URL + tag;
@@ -198,21 +203,17 @@ function parseListFilters(page, tag, title) {
         throw "Not found filter-block";
     }
 
-    // подгтовленные фильтры
+    // подготовленные фильтры
 
-    page.appendPassiveItem("separator", "", {
-        title: "Рік прем'єри"
-    });
     const thisYear = new Date().getFullYear().toString()
+    putSeparator("Рік прем'єри")
     putItem("Цього року", "year=" + thisYear);
     putItem("2020+", "year=2020;" + thisYear);
     putItem("2010-2019", "year=2010;2019");
     putItem("2000-2009", "year=2000;2009");
     putItem("1920-1999", "year=1920;1999");
 
-    page.appendPassiveItem("separator", "", {
-        title: "Рейтинг IMDb"
-    });
+    putSeparator("Рейтинг IMDb")
     putItem("8+", "imdb=8;10");
     putItem("6+", "imdb=6;10");
     putItem("4-6", "imdb=4;6");
@@ -220,30 +221,31 @@ function parseListFilters(page, tag, title) {
 
     /* создаем список жанров, стран, телеканалов (если есть) */
 
-    const allowedFilters = ["genre", "cat", "year", "imdb", "channel"]   // skip "channel"
-    const maxChannels = 20;
+    const allowedFilters = ["genre", "cat", "year", "imdb"]   // skip "channel" from parse
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
     // inside pairs (select, div), ... We need only `select` items,
     // as they contain filter's data (as `option` elements, 1st option always empty) for each key
 
+    var hasChannels = false;
+
     items.getElementByTagName("select").forEach(function(item) {
         const filterKey = item.attributes.getNamedItem('name').value; // api key
         const filterName = item.attributes.getNamedItem('data-placeholder').value; // human name
 
-        if (allowedFilters.indexOf(filterKey) === -1) { return; }
+        if (filterKey === "channel") {
+            hasChannels = true;
+        }
 
-        page.appendPassiveItem("separator", "", {
-            title: filterName
-        });
+        if (allowedFilters.indexOf(filterKey) === -1) return;
+
+        putSeparator(filterName);
 
         var entries = 0;
         item.children.forEach(function(option) {
-            if (filterKey === "channel" && entries > maxChannels) { return; }
-            
             const itemName = option.textContent;
-            if (!itemName) { return; }
+            if (!itemName) return; // empty value
 
             var itemValue = itemName;  // in case if api value = title
             if (option.attributes.getNamedItem('value')) {
@@ -254,6 +256,23 @@ function parseListFilters(page, tag, title) {
             entries += 1;
         });
     });
+
+    if (hasChannels) {
+        // channels with 18 and more movies (some exceptions to young but popular channels)
+        putSeparator("Телеканал");
+
+        const popularChannels = [
+            "Netflix", "BBC", "Amazon", "Apple TV+", "HBO", "FX", "Hulu", "CBS", "Paramount+",
+            "Nickelodeon", "AMC", "Disney", "National Geographic", "Fox", "Sci Fi Channel", "DC Universe",
+            "Discovery", "Showtime", "NBC", "The CW", "ABC", "ITV", "Peacock", "Channel 4", "Cartoon Network",
+            "Starz", "USA Network", "Sky Atlantic", "Rai 1", "TNT", "Sky1", "Syfy", "Comedy Central",
+            "ZDF", "TF1", "France 2", "CBC", "YouTube Premium", "1+1"
+        ] // len = 30
+
+        popularChannels.forEach(function(channel) {
+            putItem(channel, "channel=" + channel.replace("+", "ppp"));
+        })
+    }
 
 }
 
@@ -335,7 +354,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
     page.entries = 0;
 
     function loader() {
-        if (!hasNextPage) { return false; }
+        if (!hasNextPage) return false;
 
         page.loading = true;
         var url = searchUrlBuilder(nextPageNumber);
