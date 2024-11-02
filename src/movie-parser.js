@@ -295,7 +295,8 @@ function parseVideoURL(href) {
     const allowedCDNs = ["://tortuga.wtf/", "://tortuga.tw/"]
 
     var isValidSource = false;
-    for (var cdnSubstring of allowedCDNs) {
+    for (var i in allowedCDNs) {
+        const cdnSubstring = allowedCDNs[i];
         if (href.match(cdnSubstring)) {
             isValidSource = true;
             break;
