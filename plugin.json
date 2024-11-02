@@ -4,12 +4,12 @@
     "id": "UASerials",
     "file": "uaserials.js",
     "showtimeVersion": "5",
-    "version": "1.4.6",
+    "version": "1.5",
     "author": "eclipse7723",
     "title": "UASerials",
     "icon": "logo.svg",
     "synopsis": "UASerials — твої улюблені серіали українською мовою онлайн",
     "category": "video",
-    "description": "Плагін для Movian для відтворення відео з українського онлайн-кінотеатру UASerials.",
+    "description": "Movian плагін для відтворення відео з українського онлайн-кінотеатру UASerials.",
     "homepage": "https://github.com/eclipse7723/movian-plugin-uaserials"
   }
