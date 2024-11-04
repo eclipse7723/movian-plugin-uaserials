@@ -75,52 +75,72 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
     /* страница с выбором - все фильмы или фильтровать */
 
-    if (title === "Аніме") {
-        // отсутствие фильтров
-        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+    const noFiltersCategories = ["Аніме"];
+    // probably this filter is useless for this category of movies
+    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
+
+    if (noFiltersCategories.indexOf(title) !== -1) {
+        // page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
         return;
     }
 
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
+    /* all movies */
+
     page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
         title: "Усі " + title.toLowerCase() + " ▶"
     });
 
-    // todo: show popular movie from main site page
-    if (service._debug) {
-        page.appendItem(PLUGIN.id + ":list-main:" + tag + ":" + title, "directory", {
-            title: "В центрі уваги ▶"
+    /* new movies */
+
+    page.appendItem(PLUGIN.id + ":list-main:" + tag + ":" + title, "directory", {
+        title: "Новинки на сайті ▶"
+    });
+
+    /* детальные фильтры */
+
+    page.appendPassiveItem("separator", "", {
+        title: "Фільтри"
+    });
+
+    function putFilteredButton(searchBy, filterKey) {
+        page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title + ":" + filterKey, "directory", {
+            title: "Обрати за " + searchBy + " ▶"
         });
     }
 
-    // todo: make own button for each option...
-    page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
-        title: "Обрати категорію / рік / країну / рейтинг ▶"
-    });
+    if (noGenresCategories.indexOf(title) === -1) {
+        putFilteredButton("жанром", "cat");
+    }
+    putFilteredButton("роком прем'єри", "year");
+    putFilteredButton("рейтингом IMDb", "imdb");
+    putFilteredButton("країною", "country");
+    putFilteredButton("телеканалом", "channel");
+
 });
 
-new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*)", function(page, tag, title) {
+new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*):(.*)", function(page, tag, title, filters) {
     /* страница с фильтрами */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     try {
-        parseListFilters(page, tag, title);
+        parseListFilters(page, tag, title, filters);
     } catch (e) {
         console.log("Error while parsing list filters: " + e);
-        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
     }
 });
 
 new page.Route(PLUGIN.id + ":list-main:(.*):(.*)", function(page, tag, title) { // todo
     /* страница с фильтрами с главной страницы сайта по тегу */
-    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title + " - В центрі уваги");
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title + " - Новинки на сайті");
 
     try {
         parseListFromMain(page, tag, title);
     } catch (e) {
-        console.log("Error while parsing list filters: " + e);
-        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
+        console.log("Error while parsing list from main page: " + e);
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
     }
 });
 
@@ -185,7 +205,6 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
             details[key] = value;
         }
     }
-    console.log(details)
 
     var imdbRating = doc.getElementByClassName("short-rates")[0].getElementByTagName("a");
     if (imdbRating.length !== 0) {

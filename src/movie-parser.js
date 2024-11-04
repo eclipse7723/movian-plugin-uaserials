@@ -1,30 +1,11 @@
-
-// TEXT FORMATTING -----------------------------------------------
-const COLOR_GRAY = "7F7F7F"
-
-var RichText = function (x) {this.str = x.toString()};
-RichText.prototype.toRichString = function (x) {return this.str};
-
-function getColoredFormat(text, color) {
-    return '<font color="' + color + '">' + text + '</font>';
-}
-function formatInfo(text) {
-    return getColoredFormat(text, COLOR_GRAY);
-}
-function formatBold(text) {
-    return "<b>" + text + "</b>";
-}
-// ---------------------------------------------------------------
-
-
 function parseCollections(page, href) {
     /* Парсит страницы с коллекциями фильмов и сериалов */
-    var doc = fetchDoc(href);
+    const doc = fetchDoc(href);
 
-    var items = doc.getElementById("dle-content").children;
+    const items = doc.getElementById("dle-content").children;
     items.forEach(function(item) {
-        var data = item.children[0];    // tag 'a'
-        var children = data.children;   // tags 'img', div 'uas-col-title', div 'uas-col-count'
+        const data = item.children[0];    // tag 'a'
+        const children = data.children;   // tags 'img', div 'uas-col-title', div 'uas-col-count'
 
         const title = children[1].textContent;
         const itemHref = data.attributes.getNamedItem('href').value;
@@ -46,41 +27,45 @@ function parseCollections(page, href) {
 }
 
 
+function parseMovieItem(page, item) {
+    /* добавляет элемент фильма на страницу. item = div.short-cols */
+
+    const children = item.children;
+    const titleUa = children[1].textContent;
+    const titleEn = children[2].textContent;
+    const itemHref = children[0].attributes.getNamedItem('href').value;
+    const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
+
+    var desc = "";
+    if (titleEn) {
+        desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
+    }
+
+    const label1 = children[0].getElementByClassName("short-label-level-1")[0]
+    if (label1) {
+        desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
+    }
+    const label2 = children[0].getElementByClassName("short-label-level-2")[0]
+    if (label2) {
+        desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
+    }
+
+    page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
+        title: titleUa,
+        icon: itemImg,
+        description: new RichText(desc),
+    });
+    page.entries += 1
+}
+
+
 function parseMovies(page, href) {
-    /* Парсит краткую инфу про фильмы по указаному адресу (название, иконка) */
-    var doc = fetchDoc(href);
+    /* Парсит краткую инфу про фильмы по указанному адресу (название, иконка) */
+    const doc = fetchDoc(href);
 
-    var items = doc.getElementByClassName("short-cols");
+    const items = doc.getElementByClassName("short-cols");
     items.forEach(function(item) {
-        var children = item.children;
-        const titleUa = children[1].textContent;
-        const titleEn = children[2].textContent;
-        const itemHref = children[0].attributes.getNamedItem('href').value;
-        const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
-
-        var desc = "";
-        if (titleEn) {
-            desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
-        }
-
-        const label1 = children[0].getElementByClassName("short-label-level-1")[0]
-        if (label1) {
-            desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
-        }
-        const label2 = children[0].getElementByClassName("short-label-level-2")[0]
-        if (label2) {
-            desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
-        }
-
-        desc = new RichText(desc);
-
-        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
-            title: titleUa,
-            icon: itemImg,
-            description: desc,
-        });
-        page.entries += 1
-
+        parseMovieItem(page, item);
     });
 }
 
@@ -170,7 +155,7 @@ function parseFilterQuery(filterData) {
 
     possibleFilters.forEach(function(filterKey) {
         if (!filterData.hasOwnProperty(filterKey)) return;
-        var filterValue = filterData[filterKey];
+        const filterValue = filterData[filterKey];
 
         if (filterValue.length === 0) return;
 
@@ -181,8 +166,28 @@ function parseFilterQuery(filterData) {
     return filterTemplate.replace("{query}", queries.join("/"));
 }
 
-function parseListFilters(page, tag, title) {
+function __parseFilters(filters) {
+    const possibleFilters = ["year", "imdb", "cat", "country", "channel"];
+
+    filters = filters.split(";");
+    if (filters.length === 0) {
+        filters = possibleFilters;
+    } else {
+        // validate given filters
+        for (var i in filters) {
+            const filterKey = filters[i];
+            if (possibleFilters.indexOf(filterKey) === -1) {
+                throw "Unknown filter key: " + filterKey;
+            }
+        }
+    }
+    return filters;
+}
+
+function parseListFilters(page, tag, title, filters) {
     /* creates buttons with filters on page */
+
+    filters = __parseFilters(filters);
 
     function putItem(name, filterData) {
         page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":" + filterData, "directory", {
@@ -195,38 +200,55 @@ function parseListFilters(page, tag, title) {
         });
     }
 
+    // подготовленные фильтры
+
+    if (filters.indexOf("year") !== -1) {
+        const thisYear = new Date().getFullYear().toString()
+
+        putSeparator("Рік прем'єри")
+        putItem("Цього року", "year=" + thisYear + ";" + thisYear);
+        putItem("2020+", "year=2020;" + thisYear);
+        putItem("2010-2019", "year=2010;2019");
+        putItem("2000-2009", "year=2000;2009");
+        putItem("1990-2010", "year=1990;2010");
+        putItem("1920-1999", "year=1920;1999");
+    }
+    if (filters.indexOf("imdb") !== -1) {
+        putSeparator("Рейтинг IMDb")
+        putItem("9+", "imdb=9;10");
+        putItem("8+", "imdb=8;10");
+        putItem("6+", "imdb=6;10");
+        putItem("4-6", "imdb=4;6");
+        putItem("0-3", "imdb=0;3");
+    }
+
+    /* создаем список жанров, стран, телеканалов (если есть) */
+
+    const allowedParsingFilters = ["cat", "year", "country", "imdb"];
+
+    // if no filters in allowedParsingFilters, return
+    var shouldParseFilters = false;
+    for (var i in filters) {
+        const filterKey = filters[i];
+        if (allowedParsingFilters.indexOf(filterKey) !== -1 || filterKey === "channel") {
+            shouldParseFilters = true;
+            break;
+        }
+    }
+    if (shouldParseFilters === false) {
+        return;
+    }
+
     // скачаем страницу и спарсим оттуда фильтры
     const href = BASE_URL + tag;
-    var doc = fetchDoc(href);
+    const doc = fetchDoc(href);
 
     if (!doc.getElementByClassName("filter-block")) {
         throw "Not found filter-block";
     }
 
-    // подготовленные фильтры
-
-    const thisYear = new Date().getFullYear().toString()
-    putSeparator("Рік прем'єри")
-    putItem("Цього року", "year=" + thisYear + ";" + thisYear);
-    putItem("2020+", "year=2020;" + thisYear);
-    putItem("2010-2019", "year=2010;2019");
-    putItem("2000-2009", "year=2000;2009");
-    putItem("1920-1999", "year=1920;1999");
-
-    putSeparator("Рейтинг IMDb")
-    putItem("9+", "imdb=9;10");
-    putItem("8+", "imdb=8;10");
-    putItem("6+", "imdb=6;10");
-    putItem("4-6", "imdb=4;6");
-    putItem("0-3", "imdb=0;3");
-
-    /* создаем список жанров, стран, телеканалов (если есть) */
-
-    const allowedFilters = ["cat", "year", "imdb"];   // skip "channel" from parse
-    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
-
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
-    var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
+    const items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
     // inside pairs (select, div), ... We need only `select` items,
     // as they contain filter's data (as `option` elements, 1st option always empty) for each key
 
@@ -240,11 +262,11 @@ function parseListFilters(page, tag, title) {
             hasChannels = true;
         }
 
-        // excluded filter
-        if (allowedFilters.indexOf(filterKey) === -1) return;
+        // excluded filters from parsing
+        if (allowedParsingFilters.indexOf(filterKey) === -1) return;
 
-        // probably this filter is useless for this category of movies
-        if (filterKey === "cat" && noGenresCategories.indexOf(title) !== -1) return;
+        // not in the display list
+        if (filters.indexOf(filterKey) === -1) return;
 
         putSeparator(filterName);
 
@@ -263,7 +285,7 @@ function parseListFilters(page, tag, title) {
         });
     });
 
-    if (hasChannels) {
+    if (hasChannels && filters.indexOf("channel") !== -1) {
         putSeparator("Телеканал");
         
         // channels with 18 and more movies (some exceptions to young but popular channels)
@@ -289,9 +311,24 @@ function appendPossibleFilters(page) { // todo
 
 /* main page list */
 
-function parseListFromMain(page, tag, title) {  // todo
+function parseListFromMain(page, tag, title) {
     /* добавляет на страницу список фильмов с главной страницы */
-    throw "not realized yet"
+
+    const href = BASE_URL;
+    const doc = fetchDoc(href);
+
+    const items = doc.getElementByClassName("sect");
+
+    items.forEach(function(item) {
+        const sectionTitle = item.children[0].textContent;
+        if (sectionTitle !== title) return;
+
+        const sectionContent = item.children[1].getElementByClassName("short-cols");
+
+        sectionContent.forEach(function(sectionItem) {
+            parseMovieItem(page, sectionItem);
+        })
+    });
 }
 
 /* фильм */
@@ -354,8 +391,7 @@ function parseVideoURL(href) {
         return null;
     }
 
-    const url = match[1];
-    return url;
+    return match[1];
 }
 
 /* paginator */
@@ -371,7 +407,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
         if (!hasNextPage) return false;
 
         page.loading = true;
-        var url = searchUrlBuilder(nextPageNumber);
+        const url = searchUrlBuilder(nextPageNumber);
 
         const expectedEntries = page.entries + itemsPerPage;
 
