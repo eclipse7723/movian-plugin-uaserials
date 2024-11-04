@@ -46,41 +46,45 @@ function parseCollections(page, href) {
 }
 
 
+function parseMovieItem(page, item) {
+    /* добавляет элемент фильма на страницу. item = div.short-cols */
+
+    const children = item.children;
+    const titleUa = children[1].textContent;
+    const titleEn = children[2].textContent;
+    const itemHref = children[0].attributes.getNamedItem('href').value;
+    const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
+
+    var desc = "";
+    if (titleEn) {
+        desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
+    }
+
+    const label1 = children[0].getElementByClassName("short-label-level-1")[0]
+    if (label1) {
+        desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
+    }
+    const label2 = children[0].getElementByClassName("short-label-level-2")[0]
+    if (label2) {
+        desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
+    }
+
+    page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
+        title: titleUa,
+        icon: itemImg,
+        description: new RichText(desc),
+    });
+    page.entries += 1
+}
+
+
 function parseMovies(page, href) {
-    /* Парсит краткую инфу про фильмы по указаному адресу (название, иконка) */
-    var doc = fetchDoc(href);
+    /* Парсит краткую инфу про фильмы по указанному адресу (название, иконка) */
+    const doc = fetchDoc(href);
 
-    var items = doc.getElementByClassName("short-cols");
+    const items = doc.getElementByClassName("short-cols");
     items.forEach(function(item) {
-        var children = item.children;
-        const titleUa = children[1].textContent;
-        const titleEn = children[2].textContent;
-        const itemHref = children[0].attributes.getNamedItem('href').value;
-        const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
-
-        var desc = "";
-        if (titleEn) {
-            desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
-        }
-
-        const label1 = children[0].getElementByClassName("short-label-level-1")[0]
-        if (label1) {
-            desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
-        }
-        const label2 = children[0].getElementByClassName("short-label-level-2")[0]
-        if (label2) {
-            desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
-        }
-
-        desc = new RichText(desc);
-
-        page.appendItem(PLUGIN.id + ":moviepage:" + itemHref + ":" + titleUa.replace(":", " "), 'video', {
-            title: titleUa,
-            icon: itemImg,
-            description: desc,
-        });
-        page.entries += 1
-
+        parseMovieItem(page, item);
     });
 }
 
@@ -328,7 +332,22 @@ function appendPossibleFilters(page) { // todo
 
 function parseListFromMain(page, tag, title) {  // todo
     /* добавляет на страницу список фильмов с главной страницы */
-    throw "not realized yet"
+
+    const href = BASE_URL;
+    const doc = fetchDoc(href);
+
+    const items = doc.getElementByClassName("sect");
+
+    items.forEach(function(item) {
+        const sectionTitle = item.children[0].textContent;
+        if (sectionTitle !== title) return;
+
+        const sectionContent = item.children[1].getElementByClassName("short-cols");
+
+        sectionContent.forEach(function(sectionItem) {
+            parseMovieItem(page, sectionItem);
+        })
+    });
 }
 
 /* фильм */
