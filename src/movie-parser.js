@@ -1,30 +1,11 @@
-
-// TEXT FORMATTING -----------------------------------------------
-const COLOR_GRAY = "7F7F7F"
-
-var RichText = function (x) {this.str = x.toString()};
-RichText.prototype.toRichString = function (x) {return this.str};
-
-function getColoredFormat(text, color) {
-    return '<font color="' + color + '">' + text + '</font>';
-}
-function formatInfo(text) {
-    return getColoredFormat(text, COLOR_GRAY);
-}
-function formatBold(text) {
-    return "<b>" + text + "</b>";
-}
-// ---------------------------------------------------------------
-
-
 function parseCollections(page, href) {
     /* Парсит страницы с коллекциями фильмов и сериалов */
-    var doc = fetchDoc(href);
+    const doc = fetchDoc(href);
 
-    var items = doc.getElementById("dle-content").children;
+    const items = doc.getElementById("dle-content").children;
     items.forEach(function(item) {
-        var data = item.children[0];    // tag 'a'
-        var children = data.children;   // tags 'img', div 'uas-col-title', div 'uas-col-count'
+        const data = item.children[0];    // tag 'a'
+        const children = data.children;   // tags 'img', div 'uas-col-title', div 'uas-col-count'
 
         const title = children[1].textContent;
         const itemHref = data.attributes.getNamedItem('href').value;
@@ -174,7 +155,7 @@ function parseFilterQuery(filterData) {
 
     possibleFilters.forEach(function(filterKey) {
         if (!filterData.hasOwnProperty(filterKey)) return;
-        var filterValue = filterData[filterKey];
+        const filterValue = filterData[filterKey];
 
         if (filterValue.length === 0) return;
 
@@ -260,14 +241,14 @@ function parseListFilters(page, tag, title, filters) {
 
     // скачаем страницу и спарсим оттуда фильтры
     const href = BASE_URL + tag;
-    var doc = fetchDoc(href);
+    const doc = fetchDoc(href);
 
     if (!doc.getElementByClassName("filter-block")) {
         throw "Not found filter-block";
     }
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
-    var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
+    const items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
     // inside pairs (select, div), ... We need only `select` items,
     // as they contain filter's data (as `option` elements, 1st option always empty) for each key
 
@@ -330,7 +311,7 @@ function appendPossibleFilters(page) { // todo
 
 /* main page list */
 
-function parseListFromMain(page, tag, title) {  // todo
+function parseListFromMain(page, tag, title) {
     /* добавляет на страницу список фильмов с главной страницы */
 
     const href = BASE_URL;
@@ -410,8 +391,7 @@ function parseVideoURL(href) {
         return null;
     }
 
-    const url = match[1];
-    return url;
+    return match[1];
 }
 
 /* paginator */
@@ -427,7 +407,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
         if (!hasNextPage) return false;
 
         page.loading = true;
-        var url = searchUrlBuilder(nextPageNumber);
+        const url = searchUrlBuilder(nextPageNumber);
 
         const expectedEntries = page.entries + itemsPerPage;
 

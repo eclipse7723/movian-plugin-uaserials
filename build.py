@@ -12,6 +12,7 @@ class Params:
     include = [
         "src/crypto-js.js",
         "src/decrypt.js",
+        "src/styling.js",
         "src/api.js",
         "src/movie-parser.js",
     ]
