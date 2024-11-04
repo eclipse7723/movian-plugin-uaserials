@@ -181,8 +181,28 @@ function parseFilterQuery(filterData) {
     return filterTemplate.replace("{query}", queries.join("/"));
 }
 
-function parseListFilters(page, tag, title) {
+function __parseFilters(filters) {
+    const possibleFilters = ["year", "imdb", "cat", "country", "channel"];
+
+    filters = filters.split(";");
+    if (filters.length === 0) {
+        filters = possibleFilters;
+    } else {
+        // validate given filters
+        for (var i in filters) {
+            const filterKey = filters[i];
+            if (possibleFilters.indexOf(filterKey) === -1) {
+                throw "Unknown filter key: " + filterKey;
+            }
+        }
+    }
+    return filters;
+}
+
+function parseListFilters(page, tag, title, filters) {
     /* creates buttons with filters on page */
+
+    filters = __parseFilters(filters);
 
     function putItem(name, filterData) {
         page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":" + filterData, "directory", {
@@ -195,6 +215,45 @@ function parseListFilters(page, tag, title) {
         });
     }
 
+    // подготовленные фильтры
+
+    if (filters.indexOf("year") !== -1) {
+        const thisYear = new Date().getFullYear().toString()
+
+        putSeparator("Рік прем'єри")
+        putItem("Цього року", "year=" + thisYear + ";" + thisYear);
+        putItem("2020+", "year=2020;" + thisYear);
+        putItem("2010-2019", "year=2010;2019");
+        putItem("2000-2009", "year=2000;2009");
+        putItem("1990-2010", "year=1990;2010");
+        putItem("1920-1999", "year=1920;1999");
+    }
+    if (filters.indexOf("imdb") !== -1) {
+        putSeparator("Рейтинг IMDb")
+        putItem("9+", "imdb=9;10");
+        putItem("8+", "imdb=8;10");
+        putItem("6+", "imdb=6;10");
+        putItem("4-6", "imdb=4;6");
+        putItem("0-3", "imdb=0;3");
+    }
+
+    /* создаем список жанров, стран, телеканалов (если есть) */
+
+    const allowedParsingFilters = ["cat", "year", "country", "imdb"];
+
+    // if no filters in allowedParsingFilters, return
+    var shouldParseFilters = false;
+    for (var i in filters) {
+        const filterKey = filters[i];
+        if (allowedParsingFilters.indexOf(filterKey) !== -1 || filterKey === "channel") {
+            shouldParseFilters = true;
+            break;
+        }
+    }
+    if (shouldParseFilters === false) {
+        return;
+    }
+
     // скачаем страницу и спарсим оттуда фильтры
     const href = BASE_URL + tag;
     var doc = fetchDoc(href);
@@ -202,28 +261,6 @@ function parseListFilters(page, tag, title) {
     if (!doc.getElementByClassName("filter-block")) {
         throw "Not found filter-block";
     }
-
-    // подготовленные фильтры
-
-    const thisYear = new Date().getFullYear().toString()
-    putSeparator("Рік прем'єри")
-    putItem("Цього року", "year=" + thisYear + ";" + thisYear);
-    putItem("2020+", "year=2020;" + thisYear);
-    putItem("2010-2019", "year=2010;2019");
-    putItem("2000-2009", "year=2000;2009");
-    putItem("1920-1999", "year=1920;1999");
-
-    putSeparator("Рейтинг IMDb")
-    putItem("9+", "imdb=9;10");
-    putItem("8+", "imdb=8;10");
-    putItem("6+", "imdb=6;10");
-    putItem("4-6", "imdb=4;6");
-    putItem("0-3", "imdb=0;3");
-
-    /* создаем список жанров, стран, телеканалов (если есть) */
-
-    const allowedFilters = ["cat", "year", "imdb"];   // skip "channel" from parse
-    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
 
     // filter-wrap -> div.filter-box -> div{3 div.fb-col} -> 2nd div.fb-col -> div.fb-sect
     var items = doc.getElementById("filter-wrap").children[0].children[1].children[1];
@@ -240,11 +277,11 @@ function parseListFilters(page, tag, title) {
             hasChannels = true;
         }
 
-        // excluded filter
-        if (allowedFilters.indexOf(filterKey) === -1) return;
+        // excluded filters from parsing
+        if (allowedParsingFilters.indexOf(filterKey) === -1) return;
 
-        // probably this filter is useless for this category of movies
-        if (filterKey === "cat" && noGenresCategories.indexOf(title) !== -1) return;
+        // not in the display list
+        if (filters.indexOf(filterKey) === -1) return;
 
         putSeparator(filterName);
 
@@ -263,7 +300,7 @@ function parseListFilters(page, tag, title) {
         });
     });
 
-    if (hasChannels) {
+    if (hasChannels && filters.indexOf("channel") !== -1) {
         putSeparator("Телеканал");
         
         // channels with 18 and more movies (some exceptions to young but popular channels)

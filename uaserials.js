@@ -75,13 +75,20 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
     /* страница с выбором - все фильмы или фильтровать */
 
-    if (title === "Аніме") {
-        // отсутствие фильтров
+    const noFiltersCategories = ["Аніме"];
+    // probably this filter is useless for this category of movies
+    const noGenresCategories = ["Мультсеріали", "Мультфільми"];
+    // only these have channels
+    const hasChannelsCategories = ["Серіали"];
+
+    if (noFiltersCategories.indexOf(title) !== -1) {
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
         return;
     }
 
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    /* all movies */
 
     page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
         title: "Усі " + title.toLowerCase() + " ▶"
@@ -94,18 +101,36 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
         });
     }
 
-    // todo: make own button for each option...
-    page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title, "directory", {
-        title: "Обрати категорію / рік / країну / рейтинг ▶"
+    /* детальные фильтры */
+
+    page.appendPassiveItem("separator", "", {
+        title: "Фільтри"
     });
+
+    function putFilteredButton(searchBy, filterKey) {
+        page.appendItem(PLUGIN.id + ":list-filtered:" + tag + ":" + title + ":" + filterKey, "directory", {
+            title: "Обрати за " + searchBy + " ▶"
+        });
+    }
+
+    if (noGenresCategories.indexOf(title) === -1) {
+        putFilteredButton("жанром", "cat");
+    }
+    putFilteredButton("роком прем'єри", "year");
+    putFilteredButton("рейтингом IMDb", "imdb");
+    putFilteredButton("країною", "country");
+    if (hasChannelsCategories.indexOf(title) !== -1) {
+        putFilteredButton("телеканалом", "channel");
+    }
+
 });
 
-new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*)", function(page, tag, title) {
+new page.Route(PLUGIN.id + ":list-filtered:(.*):(.*):(.*)", function(page, tag, title, filters) {
     /* страница с фильтрами */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
     try {
-        parseListFilters(page, tag, title);
+        parseListFilters(page, tag, title, filters);
     } catch (e) {
         console.log("Error while parsing list filters: " + e);
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
