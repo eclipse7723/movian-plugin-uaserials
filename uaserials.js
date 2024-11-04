@@ -78,8 +78,6 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
     const noFiltersCategories = ["Аніме"];
     // probably this filter is useless for this category of movies
     const noGenresCategories = ["Мультсеріали", "Мультфільми"];
-    // only these have channels
-    const hasChannelsCategories = ["Серіали"];
 
     if (noFiltersCategories.indexOf(title) !== -1) {
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":" + "all");
@@ -119,9 +117,7 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
     putFilteredButton("роком прем'єри", "year");
     putFilteredButton("рейтингом IMDb", "imdb");
     putFilteredButton("країною", "country");
-    if (hasChannelsCategories.indexOf(title) !== -1) {
-        putFilteredButton("телеканалом", "channel");
-    }
+    putFilteredButton("телеканалом", "channel");
 
 });
 
