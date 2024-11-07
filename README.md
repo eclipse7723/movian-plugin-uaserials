@@ -1,5 +1,6 @@
 # movian-uaserials-plugin
-https://uaserials.pro/ integration for Movian
+
+https://uaserials.com/ integration for Movian
 
 ## Download latest release
 
@@ -7,7 +8,7 @@ Check [Releases](https://github.com/eclipse7723/movian-plugin-uaserials/releases
 
 ## ...Or Build
 
-If you want newest version, please clone repository and Run `build.py`
+If you want the newest version, please clone repository and Run `build.py`
 
 ## Install plugin
 
