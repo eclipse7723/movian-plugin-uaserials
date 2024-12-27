@@ -184,7 +184,7 @@ new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) 
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     /* страница с деталями фильма и перехода к просмотру */
-    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
+    setPageHeader(page, DEFAULT_PAGE_TYPE, title)
 
     page.loading = true;
 
@@ -214,6 +214,9 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     }
 
     var img = doc.getElementByClassName("fimg")[0].children[0].attributes.getNamedItem("src").value;
+
+    page.metadata.icon = img;
+    page.metadata.logo = img;
 
     var description = doc.getElementByClassName("ftext")[0].textContent;
 
