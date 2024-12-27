@@ -80,7 +80,7 @@ new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) 
     const noGenresCategories = ["Мультсеріали", "Мультфільми"];
 
     if (noFiltersCategories.indexOf(title) !== -1) {
-        // page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
+        page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
         return;
     }
 
