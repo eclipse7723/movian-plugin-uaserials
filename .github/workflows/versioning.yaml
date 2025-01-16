@@ -1,0 +1,49 @@
+name: Bump version
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.js"
+      - "**/*.json"
+      - "**/*.svg"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.js"
+      - "**/*.json"
+      - "**/*.svg"
+
+jobs:
+  bump_version:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip versioning]')"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Bump version in plugin.json
+        id: bump_version
+        run: |
+          current_version=$(cat plugin.json | jq -r '.version')
+          IFS='.' read -r major minor patch <<< "$current_version"
+          new_version="$major.$minor.$((patch + 1))"
+          echo "New version: $new_version"
+          jq --arg new_version "$new_version" '.version = $new_version' plugin.json > plugin.json.tmp
+          mv plugin.json.tmp plugin.json
+          echo "version=$new_version" >> $GITHUB_ENV
+
+      - name: Commit and push updated plugin.json
+        run: |
+          git config --local user.name "github-actions"
+          git config --local user.email "actions@github.com"
+          git add plugin.json
+          git commit -m "Bump version to ${{ env.version }}"
+          git push origin main
+
+      - name: Create tag
+        run: |
+          git tag -a "v${{ env.version }}" -m "v${{ env.version }}"
+          git push origin --tags
