@@ -25,7 +25,7 @@ function setPageHeader(page, type, title) {
     }
 }
 
-var currentMovieData;
+var currentMovieData; // contains current movie data cache
 service.create(PLUGIN.title, PLUGIN.id + ':start', 'video', true, PLUGIN_LOGO);
 
 /* SETTINGS */
@@ -41,6 +41,7 @@ function logDebug(message) {
 }
 
 // todo: add quality select if possible
+// todo: add auto-update since new movian version can load and unzip the plugin
 
 /* PAGES */
 
@@ -185,7 +186,9 @@ new page.Route(PLUGIN.id + ":collection:(.*):(.*)", function(page, href, title) 
 
 new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     /* страница с деталями фильма и перехода к просмотру */
-    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title)
+    setPageHeader(page, DEFAULT_PAGE_TYPE, title)
+
+    // todo: add logo of film so user can make bookmark and view actual logo of movie in main page of movian
 
     page.loading = true;
 
@@ -249,10 +252,13 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
 
     parseTrailer(page, currentMovieData);
 
+    // todo: add details page so user can do search by year, genre, etc..
+
     page.appendPassiveItem("separator", '', {
         title: "Дивитись онлайн (HLS)"
     });
 
+    // todo: add items as video so user can set them as 'viewed'
     parseMovie(page, currentMovieData);
 
     page.loading = false;
@@ -264,7 +270,7 @@ new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
     data = JSON.parse(data);
 
     setPageHeader(page, "video", PLUGIN.id + " - " + data.title)
-    
+
     page.type = 'video';
     page.source = 'videoparams:' + JSON.stringify({
       title: data.title + (data.season ? ": " + data.season + " " + data.episode : ""),
@@ -286,6 +292,9 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
     setPageHeader(page, "directory", PLUGIN.id + " - " + title + " - озвучка")
 
     parseTvEpisode(page, currentMovieData, season, episode);
+
+    // todo: add regirect to play page if only one sound is available
+
     page.loading = false;
 });
 
