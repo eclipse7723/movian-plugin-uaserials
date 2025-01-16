@@ -92,8 +92,10 @@ function __parseTvSeries(page, movieData, seasonsData) {
             title: seasonData.title
         });
         seasonData.episodes.forEach(function(episodeData) {
-            page.appendItem(PLUGIN.id + ":play-select-sound:" + movieData.title + ":" + seasonData.title + ":" + episodeData.title, "directory", {
-                title: episodeData.title
+            page.appendItem(PLUGIN.id + ":play-select-sound:" + movieData.title + ":" + seasonData.title + ":" + episodeData.title, "video", {
+                title: episodeData.title,
+                icon: currentMovieData["img"],
+                description: seasonData.title + ', ' + episodeData.title
             });
         });
     });
@@ -338,8 +340,10 @@ function __parseMovieVideo(page, movieData, videoUrl) {
         title: movieData.title,
         href: videoUrl,
     })
-    page.appendItem(PLUGIN.id + ":play:" + playData, "directory", {
-        title: movieData.title
+    page.appendItem(PLUGIN.id + ":play:" + playData, "video", {
+        title: movieData.title,
+        icon: currentMovieData["img"],
+        description: 'Нажміть "Х", щоб почати перегляд відео...',
     });
 }
 

@@ -60,7 +60,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Мультсеріали", tag: "/cartoons"},
         {name: "Мультфільми", tag: "/fcartoon"},
         {name: "Аніме", tag: "/anime"},
-        {name: "Ексклюзиви", tag: "/exclusive"},
+        //{name: "Ексклюзиви", tag: "/exclusive"},
     ];
     categories.forEach(function(data) {
         page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
@@ -258,7 +258,6 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
         title: "Дивитись онлайн (HLS)"
     });
 
-    // todo: add items as video so user can set them as 'viewed'
     parseMovie(page, currentMovieData);
 
     page.loading = false;
