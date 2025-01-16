@@ -1,15 +1,15 @@
 {
-    "type": "ecmascript",
-    "apiversion": 2,
-    "id": "UASerials",
-    "file": "uaserials.js",
-    "showtimeVersion": "5",
-    "version": "1.5.12",
-    "author": "eclipse7723",
-    "title": "UASerials",
-    "icon": "logo.svg",
-    "synopsis": "UASerials — твої улюблені серіали українською мовою онлайн",
-    "category": "video",
-    "description": "Movian плагін для відтворення відео з українського онлайн-кінотеатру UASerials.",
-    "homepage": "https://github.com/eclipse7723/movian-plugin-uaserials"
-  }
+  "type": "ecmascript",
+  "apiversion": 2,
+  "id": "UASerials",
+  "file": "uaserials.js",
+  "showtimeVersion": "5",
+  "version": "1.5.13",
+  "author": "eclipse7723",
+  "title": "UASerials",
+  "icon": "logo.svg",
+  "synopsis": "UASerials — твої улюблені серіали українською мовою онлайн",
+  "category": "video",
+  "description": "Movian плагін для відтворення відео з українського онлайн-кінотеатру UASerials.",
+  "homepage": "https://github.com/eclipse7723/movian-plugin-uaserials"
+}
