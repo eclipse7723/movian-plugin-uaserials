@@ -59,6 +59,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Мультсеріали", tag: "/cartoons"},
         {name: "Мультфільми", tag: "/fcartoon"},
         {name: "Аніме", tag: "/anime"},
+        {name: "Ексклюзиви", tag: "/exclusive"},
     ];
     categories.forEach(function(data) {
         page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
