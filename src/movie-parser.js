@@ -126,11 +126,15 @@ function findSoundsByEpisode(movieData, season, episode) {
     return sounds;
 }
 
-function parseTvEpisode(page, movieData, season, episode) {
+function parseTvEpisodes(page, movieData, season, episode) {
     const sounds = findSoundsByEpisode(movieData, season, episode);
 
     if (!sounds) {
         // error handled in `findSoundsByEpisode`
+        page.appendPassiveItem("separator", '', {
+            title: "Немає озвучок або щось пішло не так :("
+        });
+        return;
     }
 
     sounds.forEach(function(data) {
@@ -143,6 +147,7 @@ function parseTvEpisode(page, movieData, season, episode) {
         page.appendItem(PLUGIN.id + ":play:" + playData, "directory", {
             title: data.title
         });
+        page.entries += 1;
     })
 }
 

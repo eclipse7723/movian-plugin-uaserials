@@ -4,6 +4,7 @@ const service = require('movian/service');
 const settings = require('movian/settings');
 const page = require('movian/page');
 const html = require('movian/html');
+const np = require('native/prop');
 
 /* CONSTANTS */
 
@@ -60,7 +61,7 @@ new page.Route(PLUGIN.id + ":start", function(page) {
         {name: "Мультсеріали", tag: "/cartoons"},
         {name: "Мультфільми", tag: "/fcartoon"},
         {name: "Аніме", tag: "/anime"},
-        //{name: "Ексклюзиви", tag: "/exclusive"},
+        //{name: "Ексклюзиви", tag: "/exclusive"},  // fixme: has errors on filters
     ];
     categories.forEach(function(data) {
         page.appendItem(PLUGIN.id + ":list-select:" + data.tag + ":" + data.name, "directory", {
@@ -290,9 +291,16 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
     /* страница с выбором озвучки */
     setPageHeader(page, "directory", PLUGIN.id + " - " + title + " - озвучка")
 
-    parseTvEpisode(page, currentMovieData, season, episode);
+    page.entries = 0; // reset entries count
+    parseTvEpisodes(page, currentMovieData, season, episode);
 
-    // todo: add regirect to play page if only one sound is available
+    // redirect to play page if only one sound is available
+    if (Number(page.entries) === 1) {
+        var item = page.getItems()[0];
+        // we use np to avoid movian crush, because it is prop field
+        var redirectUrl = np.getValue(item.root.url);
+        page.redirect(redirectUrl);
+    }
 
     page.loading = false;
 });
