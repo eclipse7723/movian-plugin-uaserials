@@ -189,8 +189,6 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     /* страница с деталями фильма и перехода к просмотру */
     setPageHeader(page, DEFAULT_PAGE_TYPE, title)
 
-    // todo: add logo of film so user can make bookmark and view actual logo of movie in main page of movian
-
     page.loading = true;
 
     const htmlText = fetchHTML(href);
@@ -248,6 +246,8 @@ new page.Route(PLUGIN.id + ":moviepage:(.*):(.*)", function(page, href, title) {
     currentMovieData["rating"] = infoData.rating;
     currentMovieData["year"] = infoData.year;
     currentMovieData["genre"] = infoData.genre;
+
+    page.metadata.logo = img;  // suitable for bookmarks
 
     // logDebug({currentMovieData:currentMovieData})
 
