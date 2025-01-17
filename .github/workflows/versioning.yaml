@@ -45,5 +45,5 @@ jobs:
 
       - name: Create tag
         run: |
-          git tag -a "v${{ env.version }}" -m "v${{ env.version }}"
+          git tag -a "v${{ env.version }}" -m "v.${{ env.version }}"
           git push origin --tags
