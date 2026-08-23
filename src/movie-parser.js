@@ -31,21 +31,27 @@ function parseMovieItem(page, item) {
     /* добавляет элемент фильма на страницу. item = div.short-cols */
 
     const children = item.children;
-    const titleUa = children[1].textContent;
-    const titleEn = children[2].textContent;
-    const itemHref = children[0].attributes.getNamedItem('href').value;
-    const itemImg = children[0].getElementByTagName("img")[0].attributes.getNamedItem('data-src').value;
+    const link = item.getElementByTagName("a")[0];
+    const image = link.getElementByTagName("img")[0];
+    const titleUaNode = item.getElementByClassName("th-title")[0];
+    const titleEnNode = item.getElementByClassName("th-title-oname")[0];
+    const titleUa = titleUaNode ? titleUaNode.textContent : image.attributes.getNamedItem('alt').value;
+    const titleEn = titleEnNode ? titleEnNode.textContent : "";
+    const itemHref = link.attributes.getNamedItem('href').value;
+    const lazySrc = image.attributes.getNamedItem('data-src');
+    const src = image.attributes.getNamedItem('src');
+    const itemImg = lazySrc ? lazySrc.value : (src ? src.value : "");
 
     var desc = "";
     if (titleEn) {
         desc += formatInfo("Оригінальна назва: " + formatBold(titleEn));
     }
 
-    const label1 = children[0].getElementByClassName("short-label-level-1")[0]
+    const label1 = link.getElementByClassName("short-label-level-1")[0]
     if (label1) {
         desc += "\n" + formatInfo("Тип: " + formatBold(label1.children[0].textContent));
     }
-    const label2 = children[0].getElementByClassName("short-label-level-2")[0]
+    const label2 = link.getElementByClassName("short-label-level-2")[0]
     if (label2) {
         desc += "\n" + formatInfo("Кількість: " + formatBold(label2.children[0].textContent));
     }
@@ -67,6 +73,25 @@ function parseMovies(page, href) {
     items.forEach(function(item) {
         parseMovieItem(page, item);
     });
+    return items.length;
+}
+
+function parseAnimeItems(page, href, animeType) {
+    const doc = fetchDoc(href);
+    const items = doc.getElementByClassName("short-cols");
+
+    items.forEach(function(item) {
+        const labels = item.getElementByClassName("short-label-level-1");
+        const label = labels.length ? labels[0].textContent.toLowerCase() : "";
+        const isSeries = label.indexOf("сезон") !== -1 || label.indexOf("сері") !== -1;
+
+        if ((animeType === "series" && isSeries) || (animeType === "movie" && !isSeries)) {
+            parseMovieItem(page, item);
+        }
+    });
+
+    // The paginator must follow source pages even when only some cards match.
+    return items.length;
 }
 
 
@@ -341,6 +366,12 @@ function parseListFromMain(page, tag, title) {
 /* фильм */
 
 function __parseMovieVideo(page, movieData, videoUrl) {
+    const tortugaPlaylist = parseTortugaPlaylist(videoUrl);
+    if (tortugaPlaylist) {
+        __parseTortugaSeries(page, movieData, tortugaPlaylist);
+        return;
+    }
+
     const playData = JSON.stringify({
         title: movieData.title,
         href: videoUrl,
@@ -349,6 +380,60 @@ function __parseMovieVideo(page, movieData, videoUrl) {
         title: movieData.title,
         icon: currentMovieData["img"],
         description: 'Нажміть "Х", щоб почати перегляд відео...',
+    });
+}
+
+function __parseTortugaSeries(page, movieData, seasons) {
+    seasons.forEach(function(season) {
+        page.appendPassiveItem("separator", "", {
+            title: season.title || ("Сезон " + season.number)
+        });
+
+        const episodes = season.folder || [];
+        episodes.forEach(function(episode) {
+            const streams = extractTortugaStreams(episode.file);
+            if (!streams.length) {
+                console.error("Tortuga stream not found for " + season.title + " " + episode.title);
+                return;
+            }
+
+            const episodeData = {
+                title: movieData.title,
+                season: season.title || ("Сезон " + season.number),
+                episode: episode.title,
+                icon: episode.poster || movieData.img,
+            };
+
+            if (streams.length > 1) {
+                episodeData.streams = streams;
+                page.appendItem(
+                    PLUGIN.id + ":play-select-tortuga-sound:" + encodeURIComponent(JSON.stringify(episodeData)),
+                    "directory",
+                    {
+                        title: episode.title + " — обрати озвучку",
+                        icon: episodeData.icon,
+                        description: episodeData.season,
+                    }
+                );
+                page.entries += 1;
+                return;
+            }
+
+            const stream = streams[0];
+            const playData = JSON.stringify({
+                title: episodeData.title,
+                href: stream.url,
+                subtitles: stream.subtitles,
+                season: episodeData.season,
+                episode: episodeData.episode,
+            });
+            page.appendItem(PLUGIN.id + ":play:" + playData, "video", {
+                title: episode.title + (stream.voice ? " — " + stream.voice : ""),
+                icon: episodeData.icon,
+                description: episodeData.season,
+            });
+            page.entries += 1;
+        });
     });
 }
 
@@ -375,7 +460,127 @@ function parseTrailer(page, movieData) {
 
 /* видео */
 
+function decodeTortugaFileToken(token) {
+    const data = CryptoJS.enc.Base64.parse(token);
+    if (!data || data.sigBytes < 2) {
+        return null;
+    }
+
+    function byteAt(index) {
+        return (data.words[index >>> 2] >>> (24 - (index % 4) * 8)) & 0xff;
+    }
+
+    // The first decoded byte is a random seed. Every following byte is the
+    // URL byte XORed with seed + 13 + 7 * position (modulo 256).
+    const seed = byteAt(0);
+    var resultWords = [];
+    var resultLength = data.sigBytes - 1;
+    for (var i = 1; i < data.sigBytes; i++) {
+        const key = (seed + 13 + 7 * (i - 1)) & 0xff;
+        const decodedByte = byteAt(i) ^ key;
+        const resultIndex = i - 1;
+        resultWords[resultIndex >>> 2] |= decodedByte << (24 - (resultIndex % 4) * 8);
+    }
+    return CryptoJS.enc.Utf8.stringify(CryptoJS.lib.WordArray.create(resultWords, resultLength));
+}
+
+function loadTortugaFile(href) {
+    const HTML = fetchHTML(href, BASE_URL + "/");
+    const pattern = /file\s*:\s*["']([^"']+)["']/;
+    const match = HTML.match(pattern);
+    if (!match) {
+        console.error("Not found Tortuga file value at '" + href + "'");
+        return null;
+    }
+
+    const file = match[1];
+    if (/^https?:\/\//.test(file)) {
+        return {file: file, value: file};
+    }
+
+    try {
+        return {file: file, value: decodeTortugaFileToken(file)};
+    } catch (e) {
+        console.error("Failed to decode Tortuga token locally: " + e);
+        return {file: file, value: null};
+    }
+}
+
+function extractTortugaStreams(file) {
+    const value = String(file || "");
+    const streams = [];
+    const labelledStreamPattern = /\{([^}]+)\}\s*(https?:\/\/.*?)(?=\{[^}]+\}|$)/g;
+    var labelledMatch;
+
+    while ((labelledMatch = labelledStreamPattern.exec(value)) !== null) {
+        const labelledUrl = labelledMatch[2].match(/https?:\/\/[^\s,)"']+\.m3u8(?:\?[^\s,)"']*)?/);
+        if (labelledUrl) {
+            streams.push({
+                url: labelledUrl[0],
+                voice: labelledMatch[1],
+                subtitles: extractTortugaSubtitles(labelledMatch[2]),
+            });
+        }
+    }
+
+    if (streams.length) {
+        return streams;
+    }
+
+    const urlMatch = value.match(/https?:\/\/[^\s,)"']+\.m3u8(?:\?[^\s,)"']*)?/);
+    return urlMatch ? [{url: urlMatch[0], voice: "", subtitles: extractTortugaSubtitles(value)}] : [];
+}
+
+function extractTortugaSubtitles(value) {
+    const subtitles = [];
+    const subtitlePattern = /\[([^\]]+)\](https?:\/\/[^\s\[\])"']+\.vtt(?:\?[^\s\[\])"']*)?)/g;
+    var match;
+
+    while ((match = subtitlePattern.exec(String(value || ""))) !== null) {
+        const title = match[1];
+        const normalizedTitle = title.toLowerCase();
+        var language = "";
+        if (normalizedTitle.indexOf("укра") !== -1) {
+            language = "uk";
+        } else if (normalizedTitle.indexOf("англ") !== -1) {
+            language = "en";
+        }
+        subtitles.push({
+            title: title,
+            language: language,
+            source: "Tortuga",
+            url: match[2],
+        });
+    }
+
+    return subtitles;
+}
+
+function parseTortugaPlaylist(href) {
+    if (!href.match(/:\/\/tortuga\.(wtf|tw)\//)) {
+        return null;
+    }
+
+    const loaded = loadTortugaFile(href);
+    if (!loaded || !loaded.value || loaded.value.charAt(0) !== "[") {
+        return null;
+    }
+
+    try {
+        const playlist = JSON.parse(loaded.value);
+        return playlist && playlist.length ? playlist : null;
+    } catch (e) {
+        console.error("Failed to parse Tortuga series playlist: " + e);
+        return null;
+    }
+}
+
 function parseVideoURL(href) {
+    // Episode entries parsed from a Tortuga playlist already contain HLS.
+    if (/^https?:\/\/[^\s]+\.m3u8(?:\?[^\s]*)?$/.test(href)) {
+        return href;
+    }
+
     const allowedCDNs = ["://tortuga.wtf/", "://tortuga.tw/"]
 
     var isValidSource = false;
@@ -391,21 +596,73 @@ function parseVideoURL(href) {
         return null;
     }
 
-    const HTML = fetchHTML(href);
-    const pattern = /file: "(.+)"/;
-    const match = HTML.match(pattern);
-
-    if (!match) {
-        console.error("Not found video url at '" + href + "' with pattern '" + pattern + "'")
+    const loaded = loadTortugaFile(href);
+    if (!loaded) {
         return null;
     }
 
-    return match[1];
+    const file = loaded.file;
+
+    // Old Tortuga pages exposed the media URL directly.
+    if (/^https?:\/\//.test(file)) {
+        return file;
+    }
+
+    // Current Tortuga tokens can be decoded locally. This is also required
+    // on PS3: get2.fun returns HTTP 204 to Movian's old HTTP client.
+    const localVideoUrl = loaded.value;
+    if (/^https?:\/\//.test(localVideoUrl)) {
+        logDebug("Tortuga token decoded locally: " + localVideoUrl);
+        return localVideoUrl;
+    }
+
+    // Fallback for a future token format: reproduce the browser resolver.
+    function base64Encode(value) {
+        return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(value));
+    }
+    function base64Decode(value) {
+        return CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(value));
+    }
+
+    const encodedToken = base64Encode(base64Encode(file));
+    const resolverUrl = "https://get2.fun/point/?method=video_link2&xl=" + encodeURIComponent(encodedToken);
+    const resolverResponse = http.request(resolverUrl, {
+        headers: {
+            'user-agent': USER_AGENT,
+            'accept': '*/*',
+            'referer': href,
+            'origin': href.match(/^(https?:\/\/[^/]+)/)[1],
+        },
+    });
+
+    logDebug("resolve Tortuga token: status code is " + resolverResponse.statuscode);
+    if (resolverResponse.statuscode < 200 || resolverResponse.statuscode >= 300) {
+        console.error("Tortuga resolver returned HTTP " + resolverResponse.statuscode);
+        return null;
+    }
+
+    const encodedUrl = resolverResponse.toString().replace(/^\s+|\s+$/g, "");
+    if (!encodedUrl) {
+        console.error("Tortuga resolver returned an empty response");
+        return null;
+    }
+
+    try {
+        const videoUrl = base64Decode(base64Decode(encodedUrl));
+        if (!/^https?:\/\//.test(videoUrl)) {
+            console.error("Tortuga resolver returned an invalid video URL");
+            return null;
+        }
+        return videoUrl;
+    } catch (e) {
+        console.error("Failed to decode Tortuga video URL: " + e);
+        return null;
+    }
 }
 
 /* paginator */
 
-function createPageLoader(page, searchUrlBuilder, startPageNumber) {
+function createPageLoader(page, searchUrlBuilder, startPageNumber, pageParser) {
     const itemsPerPage = 18;
     var nextPageNumber = startPageNumber;
     var hasNextPage = true;
@@ -418,10 +675,9 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
         page.loading = true;
         const url = searchUrlBuilder(nextPageNumber);
 
-        const expectedEntries = page.entries + itemsPerPage;
-
+        var sourceEntries;
         try {
-            parseMovies(page, url);
+            sourceEntries = pageParser ? pageParser(page, url) : parseMovies(page, url);
         } catch (e) {
             console.error("loading page " + nextPageNumber + " failed -> " + url + ":" + e)
             hasNextPage = false;
@@ -429,7 +685,7 @@ function createPageLoader(page, searchUrlBuilder, startPageNumber) {
             return false;
         }
 
-        if (parseInt(page.entries) !== expectedEntries) {
+        if (sourceEntries !== itemsPerPage) {
             hasNextPage = false;
             page.loading = false;
             return false;
