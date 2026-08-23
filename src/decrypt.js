@@ -1,4 +1,5 @@
-const __UAS_PASSWORD = "297796CCB81D2551"
+// Current key assembled by the site's player script.
+const __UAS_PASSWORD = "297796CCB81D255125"
 
 function UASDecrypt(cipherData) {
     const encryptedData = {
