@@ -78,9 +78,23 @@ new page.Route(PLUGIN.id + ":start", function(page) {
 new page.Route(PLUGIN.id + ":list-select:(.*):(.*)", function(page, tag, title) {
     /* страница с выбором - все фильмы или фильтровать */
 
-    const noFiltersCategories = ["Аніме"];
+    const noFiltersCategories = [];
     // probably this filter is useless for this category of movies
     const noGenresCategories = ["Мультсеріали", "Мультфільми"];
+
+    if (title === "Аніме") {
+        setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+        page.appendItem(PLUGIN.id + ":list:" + tag + ":" + title + ":all", "directory", {
+            title: "Усі аніме ▶"
+        });
+        page.appendItem(PLUGIN.id + ":anime-filter:series", "directory", {
+            title: "Аніме-серіали ▶"
+        });
+        page.appendItem(PLUGIN.id + ":anime-filter:movie", "directory", {
+            title: "Повнометражні аніме ▶"
+        });
+        return;
+    }
 
     if (noFiltersCategories.indexOf(title) !== -1) {
         page.redirect(PLUGIN.id + ":list:" + tag + ":" + title + ":all");
@@ -151,7 +165,22 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, fi
     /* страница со списком фильмов согласно прописанным фильтрам (all для отображения всех) */
     setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
 
-    const query = filterQuery === "all" ? "" : "/f/" + filterQuery;
+    function encodeFilterQuery(query) {
+        return query.split("/").map(function(filter) {
+            const separatorIndex = filter.indexOf("=");
+            if (separatorIndex === -1) {
+                return filter;
+            }
+
+            const key = filter.substring(0, separatorIndex);
+            const values = filter.substring(separatorIndex + 1).split(";");
+            return key + "=" + values.map(function(value) {
+                return encodeURIComponent(value);
+            }).join(";");
+        }).join("/");
+    }
+
+    const query = filterQuery === "all" ? "" : "/f/" + encodeFilterQuery(filterQuery);
 
     function generateSearchURL(nextPage) {
         return BASE_URL + tag + query + "/page/" + nextPage + "/"
@@ -160,6 +189,21 @@ new page.Route(PLUGIN.id + ":list:(.*):(.*):(.*)", function(page, tag, title, fi
     var loader = createPageLoader(page, generateSearchURL, 1);
     loader();
 
+    page.paginator = loader;
+});
+
+new page.Route(PLUGIN.id + ":anime-filter:(.*)", function(page, animeType) {
+    const title = animeType === "movie" ? "Повнометражні аніме" : "Аніме-серіали";
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - " + title);
+
+    function generateSearchURL(nextPage) {
+        return BASE_URL + "/anime/page/" + nextPage + "/";
+    }
+
+    var loader = createPageLoader(page, generateSearchURL, 1, function(page, url) {
+        return parseAnimeItems(page, url, animeType);
+    });
+    loader();
     page.paginator = loader;
 });
 
@@ -271,12 +315,19 @@ new page.Route(PLUGIN.id + ':play:(.*)', function(page, data) {
 
     setPageHeader(page, "video", PLUGIN.id + " - " + data.title)
 
+    const videoUrl = parseVideoURL(data.href);
+    if (!videoUrl) {
+        page.error("Не вдалося отримати URL відео");
+        return;
+    }
+
     page.type = 'video';
     page.source = 'videoparams:' + JSON.stringify({
       title: data.title + (data.season ? ": " + data.season + " " + data.episode : ""),
       sources: [{
-        url: "hls:" + parseVideoURL(data.href),
+        url: "hls:" + videoUrl,
       }],
+      subtitles: data.subtitles || [],
       year: data.year ? data.year : 0,
       // season: data.season ? data.season : -1,
       // episode: data.episode ? data.episode : -1,
@@ -301,6 +352,29 @@ new page.Route(PLUGIN.id + ':play-select-sound:(.*):(.*):(.*)', function(page, t
         var redirectUrl = np.getValue(item.root.url);
         page.redirect(redirectUrl);
     }
+
+    page.loading = false;
+});
+
+new page.Route(PLUGIN.id + ':play-select-tortuga-sound:(.*)', function(page, encodedData) {
+    /* страница с выбором озвучки для плейлистов Tortuga */
+    const data = JSON.parse(decodeURIComponent(encodedData));
+    setPageHeader(page, "directory", data.title + " — " + data.episode);
+
+    (data.streams || []).forEach(function(stream, index) {
+        const playData = JSON.stringify({
+            title: data.title,
+            href: stream.url,
+            subtitles: stream.subtitles,
+            season: data.season,
+            episode: data.episode,
+        });
+        page.appendItem(PLUGIN.id + ":play:" + playData, "video", {
+            title: stream.voice || ("Озвучка " + (index + 1)),
+            icon: data.icon,
+            description: data.season + " — " + data.episode,
+        });
+    });
 
     page.loading = false;
 });
