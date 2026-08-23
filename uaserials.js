@@ -379,27 +379,43 @@ new page.Route(PLUGIN.id + ':play-select-tortuga-sound:(.*)', function(page, enc
     page.loading = false;
 });
 
-function setupSearchPage(page, query) {
+function setupSearchPage(page, query, isGlobalSearch) {
     /* поисковая страница */
-    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id)
+    setPageHeader(page, DEFAULT_PAGE_TYPE, PLUGIN.id + " - Пошук: " + query)
 
-    var searchUrl = BASE_URL + "/index.php?do=search&story=" + query
     function generateSearchURL(nextPageNumber) {
-        return searchUrl + "&search_start=" + nextPageNumber;
+        return BASE_URL + "/search/" + encodeURIComponent(query) + "/page/" + nextPageNumber + "/";
     }
-    
-    var loader = createPageLoader(page, generateSearchURL, 1);
+
+    var loader = createPageLoader(page, generateSearchURL, 1, function(searchPage, url) {
+        return parseSearchResults(searchPage, url);
+    });
     loader();
 
-    page.paginator = loader;
+    if (isGlobalSearch) {
+        page.appendItem(
+            PLUGIN.id + ":search-all:" + encodeURIComponent(query),
+            "directory",
+            {
+                title: "Показати всі результати в UASerials ▶",
+                icon: PLUGIN_LOGO,
+            }
+        );
+    } else {
+        page.paginator = loader;
+    }
 }
 
 new page.Route(PLUGIN.id + ":search:(.*)", function(page, query) {
     /* страница с поиском внутри плагина */
-    setupSearchPage(page, query);
+    setupSearchPage(page, query, false);
+});
+
+new page.Route(PLUGIN.id + ":search-all:(.*)", function(page, encodedQuery) {
+    setupSearchPage(page, decodeURIComponent(encodedQuery), false);
 });
 
 new page.Searcher(PLUGIN.id, PLUGIN_LOGO, function(page, query) {
     /* Searcher позволяет из мовиана использовать поиск в этом плагине */
-    setupSearchPage(page, query);
+    setupSearchPage(page, query, true);
 });

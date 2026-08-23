@@ -94,6 +94,53 @@ function parseAnimeItems(page, href, animeType) {
     return items.length;
 }
 
+function parseSearchResults(page, href) {
+    const doc = fetchDoc(href);
+    const items = doc.getElementByClassName("uas-card");
+
+    items.forEach(function(item) {
+        const titleNode = item.getElementByClassName("uas-card__title")[0];
+        const originalNode = item.getElementByClassName("uas-card__orig")[0];
+        const image = item.getElementByClassName("uas-card__img")[0];
+        const yearNode = item.getElementByClassName("uas-card__year")[0];
+        const ratingNode = item.getElementByClassName("uas-card__rating")[0];
+        const hrefAttr = item.attributes.getNamedItem("href");
+
+        if (!titleNode || !image || !hrefAttr) {
+            return;
+        }
+
+        const title = titleNode.textContent;
+        const lazySrc = image.attributes.getNamedItem("data-src");
+        const src = image.attributes.getNamedItem("src");
+        var icon = lazySrc ? lazySrc.value : (src ? src.value : "");
+        if (icon.charAt(0) === "/") {
+            icon = BASE_URL + icon;
+        }
+
+        var description = originalNode ? originalNode.textContent : "";
+        if (yearNode) {
+            description += (description ? "\n" : "") + "Рік: " + yearNode.textContent;
+        }
+        if (ratingNode) {
+            description += (description ? "\n" : "") + "IMDb: " + ratingNode.textContent;
+        }
+
+        page.appendItem(
+            PLUGIN.id + ":moviepage:" + hrefAttr.value + ":" + title.replace(":", " "),
+            "video",
+            {
+                title: title,
+                icon: icon,
+                description: description,
+            }
+        );
+        page.entries += 1;
+    });
+
+    return items.length;
+}
+
 
 function parseMovie(page, movieData) {
     /* Парсит видео */
